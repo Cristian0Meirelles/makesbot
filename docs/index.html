@@ -764,9 +764,9 @@ function renderRadar() {
   const destaque = [...RADAR].sort((a, b) => b.disponivel - a.disponivel).slice(0, 3);
   $("#vitrineHero").innerHTML = destaque.map(p => {
     const img = (p.ofertas || []).find(o => o.imagem)?.imagem || p.imagem_loja || p.foto_url;
-    return `<div class="flutua"><div class="foto">${fotoOu(img, p.categoria, corDe(p.cor || p.nome), 150)}</div><span class="pill ${p.disponivel ? "on" : "off"}">${p.disponivel ? "Voltou!" : "Esgotado"}</span><div class="m">${esc(p.marca)}</div><div class="n">${esc(p.nome)}</div></div>`;
+    return `<div class="flutua"><div class="foto">${fotoOu(img, p.categoria, corDe(p.cor || p.nome), 150)}</div><span class="pill ${p.disponivel ? "on" : "off"}">${p.disponivel ? (p.exemplo ? "Disponível" : "Voltou!") : "Esgotado"}</span><div class="m">${esc(p.marca)}</div><div class="n">${esc(p.nome)}</div></div>`;
   }).join("");
-  const voltaram = RADAR.filter(p => p.disponivel);
+  const voltaram = RADAR.filter(p => p.disponivel && !p.exemplo && !DEMO);
   if (voltaram.length) {
     const itens = voltaram.map(p => { const o = (p.ofertas || []).find(o => o.disponivel);
       return `<span><i>● VOLTOU</i> &nbsp;<b>${esc(p.marca)} ${esc(p.nome)}${p.cor ? " · " + esc(p.cor) : ""}</b>${o ? " na " + esc(o.loja) : ""} ${tempo(p.disponivel_desde)}</span>`; }).join("");
