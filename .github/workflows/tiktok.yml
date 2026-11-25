@@ -32,7 +32,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_HOST: ${{ vars.SMTP_HOST }}
           SMTP_PORT: ${{ vars.SMTP_PORT }}
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://voltou-lilac.vercel.app' }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_WHATSAPP: ${{ secrets.ADMIN_WHATSAPP }}
           ADMIN_CALLMEBOT_KEY: ${{ secrets.ADMIN_CALLMEBOT_KEY }}

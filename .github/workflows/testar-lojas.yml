@@ -38,7 +38,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           SMTP_HOST: ${{ vars.SMTP_HOST }}
           SMTP_PORT: ${{ vars.SMTP_PORT }}
-          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://voltou-lilac.vercel.app' }}
           IN_EMAIL: ${{ inputs.email }}
           IN_WPP: ${{ inputs.whatsapp }}
           IN_KEY: ${{ inputs.callmebot }}

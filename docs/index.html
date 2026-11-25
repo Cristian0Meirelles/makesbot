@@ -748,7 +748,7 @@ function renderRadar() {
     const melhor = porLoja.find(o => o.disponivel);
     return `<article class="card">
       <div class="foto">${fotoOu(img, p.categoria, corDe(p.cor || p.nome), 150)}
-        <span class="pill ${p.disponivel ? "on" : "off"}">${p.disponivel ? "Voltou!" : "Esgotado"}</span><span class="cat">${esc(p.categoria)}</span></div>
+        <span class="pill ${p.disponivel ? "on" : "off"}">${p.exemplo ? (p.disponivel ? "Disponível" : "Esgotado") : (p.disponivel ? "Voltou!" : "Esgotado")}</span><span class="cat">${esc(p.categoria)}</span></div>
       <div class="corpo">
         <div class="m">${esc(p.marca)}</div><div class="n">${esc(p.nome)}</div>${p.cor ? `<div class="c">${esc(p.cor)}</div>` : ""}
         <div class="mini-lojas">${porLoja.slice(0, 4).map(o => `<div class="ml${o.disponivel ? " on" : ""}"><span class="pt"></span>${esc(o.loja)}<span class="pr">${o.disponivel ? `<a href="${esc(urlSegura(o.url_afiliado || o.url))}" target="_blank" rel="noopener sponsored">${o.preco ? brl(o.preco) : "Comprar"} →</a>` : (o.preco ? `<span style="color:var(--suave);font-weight:500">${brl(o.preco)}</span>` : "")}</span></div>`).join("") || `<div class="ml"><span class="pt"></span>Procurando nas lojas…</div>`}</div>
@@ -881,8 +881,17 @@ function exemplos(nomes) {
 const anima = (el, n) => { n = +n || 0; let i = 0; const passos = 24; const f = () => { i++; el.textContent = Math.round(n * i / passos).toLocaleString("pt-BR"); if (i < passos) requestAnimationFrame(f); }; f(); };
 
 /* ------------------------------------------------ carregar */
+async function vitrineDoCatalogo() {
+  // enquanto ninguém criou alerta, mostra produtos reais do catálogo
+  const linhas = await api("catalogo?select=loja,marca,produto,cor,categoria,titulo,url,url_afiliado,imagem,preco,disponivel,grupo,atualizado_em&imagem=not.is.null&preco=not.is.null&categoria=neq.Outro&order=atualizado_em.desc&limit=600");
+  DEMO_DADOS = {catalogo: linhas.sort(() => Math.random() - .5)};
+  return demoRadar();
+}
 async function carregarRadar() {
   RADAR = DEMO ? demoRadar() : await api("produtos?select=id,categoria,marca,nome,cor,foto_url,imagem_loja,disponivel,disponivel_desde,criado_em,ultima_verificacao,ofertas(loja,preco,disponivel,url,url_afiliado,imagem,atualizado_em)&order=criado_em.desc&limit=120");
+  if (!DEMO && !RADAR.length) { try { RADAR = await vitrineDoCatalogo(); RADAR.forEach(p => p.exemplo = true);
+      $("#radar h2").innerHTML = "Direto das lojas, <em>agora</em>";
+      $("#radar .titulo-sec p").textContent = "Uma amostra do nosso catálogo, com estoque e preço reais. Assim que alguém criar um alerta, ele aparece aqui."; } catch (e) { console.warn(e); } }
   renderRadar();
 }
 async function iniciar() {
