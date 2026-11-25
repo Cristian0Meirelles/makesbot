@@ -1,0 +1,22 @@
+# O GitHub desliga agendamentos de repositórios sem atividade por 60 dias.
+# Este workflow religa os agendamentos toda semana.
+name: Manter bot ativo
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  manter:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for wf in radar.yml tiktok.yml catalogo.yml manter-ativo.yml; do
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/$wf/enable" && echo "ok $wf"
+          done

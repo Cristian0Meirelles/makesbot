@@ -1,0 +1,128 @@
+"""
+Monta o catálogo (1x por dia): varre as lojas por categoria + lançamentos e
+guarda marca, produto, cor, foto, preço e estoque. O site usa isso no
+autocompletar e na comparação de preços.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import logging
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+
+from . import lojas as L
+from .util import Oferta, normalizar, tokens, url_codificada
+
+log = logging.getLogger("catalogo")
+
+# termo de busca -> categoria
+TERMOS = {
+    "blush": "Blush", "batom": "Batom", "gloss": "Gloss", "lip tint": "Lip tint", "lapis labial": "Lápis labial",
+    "base": "Base", "corretivo": "Corretivo", "po facial": "Pó", "iluminador": "Iluminador",
+    "bronzer": "Bronzer", "contorno": "Contorno", "paleta de sombras": "Sombra", "sombra": "Sombra",
+    "mascara de cilios": "Máscara de cílios", "delineador": "Delineador", "sobrancelha": "Sobrancelha",
+    "primer": "Primer", "fixador de maquiagem": "Fixador",
+}
+# palavras no nome/categoria da loja -> categoria (a ordem importa)
+PISTAS = [
+    ("lip tint", "Lip tint"), ("tint", "Lip tint"), ("gloss", "Gloss"), ("lapis labial", "Lápis labial"),
+    ("lip liner", "Lápis labial"), ("batom", "Batom"), ("lipstick", "Batom"), ("blush", "Blush"),
+    ("iluminador", "Iluminador"), ("highlighter", "Iluminador"), ("bronzer", "Bronzer"), ("contorno", "Contorno"),
+    ("corretivo", "Corretivo"), ("concealer", "Corretivo"), ("primer", "Primer"), ("fixador", "Fixador"),
+    ("setting spray", "Fixador"), ("base", "Base"), ("foundation", "Base"), ("po ", "Pó"), ("powder", "Pó"),
+    ("paleta", "Sombra"), ("sombra", "Sombra"), ("eyeshadow", "Sombra"), ("mascara", "Máscara de cílios"),
+    ("rimel", "Máscara de cílios"), ("delineador", "Delineador"), ("eyeliner", "Delineador"),
+    ("sobrancelha", "Sobrancelha"), ("brow", "Sobrancelha"),
+]
+PAGINAS_POR_TERMO = 2      # 2 x 50 produtos por categoria em cada loja VTEX
+PAGINAS_SHOPIFY = 4        # 4 x 250 produtos
+LIMPAR_APOS = dt.timedelta(days=4)
+
+
+def categoria_de(o: Oferta, termo_cat: str | None) -> str:
+    texto = " " + normalizar(f"{o.extra.get('produto','')} {o.extra.get('categorias','')}") + " "
+    for pista, cat in PISTAS:
+        if f" {pista}" in texto:
+            return cat
+    return termo_cat or "Outro"
+
+
+def linha_catalogo(o: Oferta, categoria: str, agora: dt.datetime, afiliado: str) -> dict:
+    marca = (o.extra.get("marca") or "").strip() or None
+    produto = (o.extra.get("produto") or o.titulo).strip()
+    cor = (o.extra.get("cor") or "").strip() or None
+    grupo_tokens = sorted({t for t in tokens(produto) if t not in set(tokens(marca))})
+    url_af = afiliado.replace("{url_enc}", url_codificada(o.url)).replace("{url}", o.url) if afiliado else None
+    return {
+        "loja": o.loja, "marca": marca, "produto": produto[:200], "cor": cor and cor[:120],
+        "categoria": categoria, "titulo": o.titulo[:300], "url": o.url, "url_afiliado": url_af,
+        "imagem": o.imagem, "preco": o.preco, "disponivel": o.disponivel,
+        "busca": normalizar(f"{marca or ''} {produto} {cor or ''} {categoria}")[:500],
+        "grupo": f"{normalizar(marca)}|{' '.join(grupo_tokens)}",
+        "atualizado_em": agora.isoformat(),
+    }
+
+
+def varrer_loja(loja: dict, agora: dt.datetime) -> list[dict]:
+    nome, dominio, tipo = loja["nome"], loja.get("dominio", ""), loja.get("tipo", "auto")
+    afiliado = loja.get("afiliado") or ""
+    linhas: dict[str, dict] = {}
+
+    def guardar(ofertas, termo_cat):
+        for o in ofertas or []:
+            if o.url not in linhas:
+                linhas[o.url] = linha_catalogo(o, categoria_de(o, termo_cat), agora, afiliado)
+
+    if tipo == "mercadolivre":
+        return []  # Mercado Livre tem milhões de anúncios: entra só na busca do radar
+
+    if tipo in ("auto", "shopify"):
+        try:
+            for pagina in range(1, PAGINAS_SHOPIFY + 1):
+                res = L.catalogo_shopify(nome, dominio, pagina)
+                if res is None:
+                    break
+                guardar(res, None)
+                if len(res) == 0:
+                    break
+            if linhas:
+                log.info("%s (shopify): %d itens", nome, len(linhas))
+                return list(linhas.values())
+        except (requests.RequestException, L.LojaBloqueada) as e:
+            log.info("%s shopify: %s", nome, e)
+
+    if tipo in ("auto", "vtex"):
+        try:
+            if L.pagina_vtex(nome, dominio, "maquiagem", 0, 0) is None:
+                log.info("%s: não é VTEX/Shopify, pulando", nome)
+                return []
+            guardar(L.pagina_vtex(nome, dominio, "maquiagem", 0, 49, novidades=True), None)  # lançamentos
+            for termo, cat in TERMOS.items():
+                for p in range(PAGINAS_POR_TERMO):
+                    try:
+                        res = L.pagina_vtex(nome, dominio, termo, p * 50, p * 50 + 49)
+                    except (requests.RequestException, L.LojaBloqueada) as e:
+                        log.info("%s/%s: %s", nome, termo, e)
+                        break
+                    guardar(res, cat)
+                    if not res or len(res) < 20:
+                        break
+        except (requests.RequestException, L.LojaBloqueada) as e:
+            log.info("%s vtex: %s", nome, e)
+    log.info("%s: %d itens", nome, len(linhas))
+    return list(linhas.values())
+
+
+def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = None) -> int:
+    agora = agora or dt.datetime.now(dt.timezone.utc)
+    lojas = [l for l in cfg.get("lojas", []) if l.get("ativo", True)]
+    total = 0
+    with ThreadPoolExecutor(4) as ex:
+        for linhas in ex.map(lambda l: varrer_loja(l, agora), lojas):
+            if linhas:
+                salvar(linhas)
+                total += len(linhas)
+    limpar(agora - LIMPAR_APOS)
+    log.info("Catálogo atualizado: %d itens", total)
+    return total

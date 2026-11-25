@@ -1,0 +1,46 @@
+name: Testar lojas e avisos
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "E-mail para receber um teste (opcional)"
+        required: false
+      whatsapp:
+        description: "WhatsApp com DDI+DDD, ex.: 5511999999999 (opcional)"
+        required: false
+      callmebot:
+        description: "Chave CallMeBot desse WhatsApp (opcional)"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest
+      - name: Testes automáticos
+        run: python -m pytest -q
+      - name: Testar lojas e envio
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          IN_EMAIL: ${{ inputs.email }}
+          IN_WPP: ${{ inputs.whatsapp }}
+          IN_KEY: ${{ inputs.callmebot }}
+        run: |
+          ARGS=()
+          [ -n "$IN_EMAIL" ] && ARGS+=(--email "$IN_EMAIL")
+          [ -n "$IN_WPP" ] && ARGS+=(--whatsapp "$IN_WPP")
+          [ -n "$IN_KEY" ] && ARGS+=(--callmebot "$IN_KEY")
+          python -m bot.main testar "${ARGS[@]}"

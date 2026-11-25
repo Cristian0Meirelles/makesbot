@@ -1,0 +1,122 @@
+# =====================================================================
+#  Lojas monitoradas
+# ---------------------------------------------------------------------
+#  tipo:
+#    auto         -> o bot descobre sozinho (VTEX ou Shopify)
+#    vtex         -> loja VTEX (busca oficial de estoque, a mais confiável)
+#    shopify      -> loja Shopify
+#    mercadolivre -> busca do Mercado Livre
+#  marcas:  se a loja for da própria marca, coloque o nome da marca aqui
+#           (aí o título do produto não precisa repetir a marca)
+#  afiliado: modelo do link de afiliado. Use {url} ou {url_enc}.
+#     Awin:   https://www.awin1.com/cread.php?awinmid=ID_LOJA&awinaffid=SEU_ID&ued={url_enc}
+#     Amazon: {url}?tag=SEU-TAG-20
+#     Sem afiliado: deixe vazio.
+#  ativo: false -> pula a loja
+#
+#  Para ver quais lojas estão respondendo, rode a Action "Testar lojas".
+#  Links de produtos de QUALQUER site (inclusive TikTok Shop) que as
+#  pessoas colam no formulário são verificados automaticamente.
+# =====================================================================
+
+lojas:
+  - nome: Sephora
+    dominio: www.sephora.com.br
+    tipo: auto
+    afiliado: ""
+
+  - nome: Beleza na Web
+    dominio: www.belezanaweb.com.br
+    tipo: auto
+    afiliado: ""
+
+  - nome: Época Cosméticos
+    dominio: www.epocacosmeticos.com.br
+    tipo: auto
+    afiliado: ""
+
+  - nome: MAC Cosmetics
+    dominio: www.maccosmetics.com.br
+    tipo: auto
+    marcas: [MAC, M.A.C, M A C]
+    afiliado: ""
+
+  - nome: O Boticário
+    dominio: www.boticario.com.br
+    tipo: vtex
+    marcas: [Boticário, Boticario, Make B]
+    afiliado: ""
+
+  - nome: Quem Disse, Berenice?
+    dominio: www.quemdisseberenice.com.br
+    tipo: vtex
+    marcas: [Quem Disse Berenice, QDB]
+    afiliado: ""
+
+  - nome: Eudora
+    dominio: www.eudora.com.br
+    tipo: vtex
+    marcas: [Eudora]
+    afiliado: ""
+
+  - nome: Natura
+    dominio: www.natura.com.br
+    tipo: auto
+    marcas: [Natura, Una]
+    afiliado: ""
+
+  - nome: Océane
+    dominio: www.oceane.com.br
+    tipo: auto
+    marcas: [Océane, Oceane]
+    afiliado: ""
+
+  - nome: Vult
+    dominio: www.vult.com.br
+    tipo: auto
+    marcas: [Vult]
+    afiliado: ""
+
+  - nome: Ruby Rose
+    dominio: www.rubyrose.com.br
+    tipo: auto
+    marcas: [Ruby Rose]
+    afiliado: ""
+
+  - nome: Bruna Tavares
+    dominio: www.brunatavares.com
+    tipo: auto
+    marcas: [Bruna Tavares, BT]
+    afiliado: ""
+
+  - nome: Mari Maria Makeup
+    dominio: www.marimariamakeup.com
+    tipo: auto
+    marcas: [Mari Maria]
+    afiliado: ""
+
+  - nome: Lancôme
+    dominio: www.lancome.com.br
+    tipo: auto
+    marcas: [Lancôme, Lancome]
+    afiliado: ""
+
+  - nome: Hinode
+    dominio: www.hinode.com.br
+    tipo: auto
+    marcas: [Hinode]
+    afiliado: ""
+
+  - nome: Mercado Livre
+    dominio: lista.mercadolivre.com.br
+    tipo: mercadolivre
+    somente_oficial: false   # true = só "Loja oficial" (evita revendedor caro)
+    # Afiliados Mercado Livre: pegue seus parâmetros no painel de afiliados
+    # e coloque aqui, ex.: "{url}?matt_word=SEU_USUARIO&matt_tool=SEU_ID"
+    afiliado: ""
+
+# Links colados no formulário: o bot reconhece a loja pelo domínio.
+# Coloque aqui modelos de afiliado para domínios que não estão na lista acima.
+afiliados_por_dominio:
+  amazon.com.br: ""
+  shop.tiktok.com: ""
