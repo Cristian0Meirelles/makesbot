@@ -107,6 +107,72 @@ lojas:
     marcas: [Hinode]
     afiliado: ""
 
+  - nome: Drogaria São Paulo
+    dominio: www.drogariasaopaulo.com.br
+    tipo: auto
+  - nome: Pague Menos
+    dominio: www.paguemenos.com.br
+    tipo: auto
+  - nome: Drogarias Pacheco
+    dominio: www.drogariaspacheco.com.br
+    tipo: auto
+  - nome: Amo Beleza
+    dominio: www.amobeleza.com.br
+    tipo: auto
+  - nome: Dailus
+    dominio: www.dailus.com.br
+    tipo: auto
+    marcas: [Dailus]
+  - nome: Payot
+    dominio: www.payot.com.br
+    tipo: auto
+    marcas: [Payot]
+  - nome: Tracta
+    dominio: www.tracta.com.br
+    tipo: auto
+    marcas: [Tracta]
+  - nome: Max Love
+    dominio: www.maxlove.com.br
+    tipo: auto
+    marcas: [Max Love]
+  - nome: Catharine Hill
+    dominio: www.catharinehill.com.br
+    tipo: auto
+    marcas: [Catharine Hill]
+  - nome: Boca Rosa Beauty
+    dominio: www.bocarosabeauty.com.br
+    tipo: auto
+    marcas: [Boca Rosa]
+  - nome: Bruna Tavares (br)
+    dominio: www.brunatavares.com.br
+    tipo: auto
+    marcas: [Bruna Tavares, BT]
+  - nome: Fran by Franciny Ehlke
+    dominio: www.franbyfe.com.br
+    tipo: auto
+    marcas: [Fran]
+  - nome: Melu
+    dominio: www.melu.com.br
+    tipo: auto
+    marcas: [Melu]
+  - nome: Panvel
+    dominio: www.panvel.com
+    tipo: auto
+  - nome: Lojas Americanas
+    dominio: www.americanas.com.br
+    tipo: auto
+  - nome: Magalu
+    dominio: www.magazineluiza.com.br
+    tipo: auto
+  - nome: Clinique
+    dominio: www.clinique.com.br
+    tipo: auto
+    marcas: [Clinique]
+  - nome: Benefit
+    dominio: www.benefitcosmetics.com.br
+    tipo: auto
+    marcas: [Benefit]
+
   - nome: Mercado Livre
     dominio: lista.mercadolivre.com.br
     tipo: mercadolivre
