@@ -121,3 +121,7 @@ Rodar no seu PC (opcional): `pip install -r requirements.txt` e depois `python -
 - **Sites de marca** que não são VTEX/Shopify (o teste mostra ❌) só são monitorados pelos **links** que as pessoas colam. Funciona com qualquer página de produto que publique os dados padrão de produto (a maioria publica).
 - **Amazon** bloqueia robôs; cole o link e o bot tenta, mas pode não funcionar.
 - O bot nunca compra nada: ele manda o link, e a pessoa compra.
+
+---
+
+© 2026 Cristiano Meirelles. Todos os direitos reservados. Código proprietário, veja [LICENSE](LICENSE). Proibido copiar, modificar, redistribuir ou vender sem autorização por escrito do autor.
