@@ -49,6 +49,11 @@ def testar(cfg: dict, args) -> int:
         try:
             if loja.get("tipo") == "mercadolivre":
                 res, tipo = L.buscar_mercadolivre(loja["nome"], "batom"), "mercadolivre"
+                if not res:
+                    h = L._get("https://lista.mercadolivre.com.br/batom") or ""
+                    print(f"   (diagnóstico ML: {len(h)} bytes, poly-card={h.count('poly-card')}, "
+                          f"layout__item={h.count('ui-search-layout__item')}, "
+                          f"titulo={'poly-component__title' in h}, login={'login' in h.lower()[:5000]})")
             else:
                 res, tipo = None, None
                 if loja.get("tipo", "auto") in ("vtex", "auto"):

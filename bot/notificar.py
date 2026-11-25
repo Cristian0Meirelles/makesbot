@@ -21,8 +21,8 @@ class Notificador:
         self.seco = seco
         self.site = os.getenv("SITE_URL", "").rstrip("/")
         # e-mail
-        self.smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-        self.smtp_porta = int(os.getenv("SMTP_PORT", "465"))
+        self.smtp_host = os.getenv("SMTP_HOST") or "smtp.gmail.com"
+        self.smtp_porta = int(os.getenv("SMTP_PORT") or 465)
         self.smtp_user = os.getenv("SMTP_USER", "")
         self.smtp_senha = os.getenv("SMTP_PASSWORD", "").replace(" ", "")
         self.remetente = os.getenv("EMAIL_REMETENTE_NOME", "Voltou! Alertas de make")
