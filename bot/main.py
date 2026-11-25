@@ -101,8 +101,9 @@ def main(argv=None) -> int:
     else:
         url, chave = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
         if not (url and chave):
-            print("Faltam SUPABASE_URL e SUPABASE_SERVICE_KEY (Secrets do GitHub).", file=sys.stderr)
-            return 1
+            # sem configuração ainda: sai sem erro para o GitHub não mandar e-mail de falha a cada 5 min
+            print("⚠️  Bot ainda não configurado: faltam os Secrets SUPABASE_URL e SUPABASE_SERVICE_KEY. Veja o README.")
+            return 0
         db = SupabaseDB(url, chave)
 
     if args.modo == "catalogo":
