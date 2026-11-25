@@ -12,6 +12,10 @@ on:
       callmebot:
         description: "Chave CallMeBot desse WhatsApp (opcional)"
         required: false
+      catalogo:
+        description: "Também testar a varredura do catálogo (sem salvar)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,3 +48,6 @@ jobs:
           [ -n "$IN_WPP" ] && ARGS+=(--whatsapp "$IN_WPP")
           [ -n "$IN_KEY" ] && ARGS+=(--callmebot "$IN_KEY")
           python -m bot.main testar "${ARGS[@]}"
+      - name: Testar catálogo (sem salvar)
+        if: ${{ inputs.catalogo }}
+        run: python -m bot.main catalogo --seco

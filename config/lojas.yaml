@@ -20,169 +20,224 @@
 # =====================================================================
 
 lojas:
+# ---- Funcionando (testadas em 25/11/2026 pelo GitHub Actions) ----
+  - nome: Época Cosméticos
+    dominio: www.epocacosmeticos.com.br
+    tipo: vtex
+    afiliado: ""
+
+  - nome: Océane
+    dominio: www.oceane.com.br
+    tipo: vtex
+    marcas: [Océane, Oceane]
+    afiliado: ""
+
+  - nome: Mari Maria Makeup
+    dominio: www.marimariamakeup.com
+    tipo: shopify
+    marcas: [Mari Maria]
+    afiliado: ""
+
+  - nome: Hinode
+    dominio: www.hinode.com.br
+    tipo: vtex
+    marcas: [Hinode]
+    afiliado: ""
+
+  - nome: Pague Menos
+    dominio: www.paguemenos.com.br
+    tipo: vtex
+    afiliado: ""
+
+  - nome: Amo Beleza
+    dominio: www.amobeleza.com.br
+    tipo: vtex
+    afiliado: ""
+
+  - nome: Dailus
+    dominio: www.dailus.com.br
+    tipo: shopify
+    marcas: [Dailus]
+    afiliado: ""
+
+  - nome: Catharine Hill
+    dominio: www.catharinehill.com.br
+    tipo: vtex
+    marcas: [Catharine Hill]
+    afiliado: ""
+
+  - nome: Lojas Americanas
+    dominio: www.americanas.com.br
+    tipo: vtex
+    afiliado: ""
+
+# ---- Desligadas na busca automática ----
+# Estas lojas bloqueiam robôs (respondem 403) ou não têm busca pública compatível.
+# Continuam valendo para LINKS colados no formulário (quando a página permite)
+# e para dar nome à loja. Teste de novo de vez em quando com a Action
+# "Testar lojas e avisos": se alguma passar a funcionar, troque para ativo: true.
   - nome: Sephora
     dominio: www.sephora.com.br
     tipo: auto
+    ativo: false
     afiliado: ""
 
   - nome: Beleza na Web
     dominio: www.belezanaweb.com.br
     tipo: auto
-    afiliado: ""
-
-  - nome: Época Cosméticos
-    dominio: www.epocacosmeticos.com.br
-    tipo: auto
+    ativo: false
     afiliado: ""
 
   - nome: MAC Cosmetics
     dominio: www.maccosmetics.com.br
     tipo: auto
     marcas: [MAC, M.A.C, M A C]
+    ativo: false
     afiliado: ""
 
   - nome: O Boticário
     dominio: www.boticario.com.br
     tipo: vtex
     marcas: [Boticário, Boticario, Make B]
+    ativo: false
     afiliado: ""
 
   - nome: Quem Disse, Berenice?
     dominio: www.quemdisseberenice.com.br
     tipo: vtex
     marcas: [Quem Disse Berenice, QDB]
+    ativo: false
     afiliado: ""
 
   - nome: Eudora
     dominio: www.eudora.com.br
     tipo: vtex
     marcas: [Eudora]
+    ativo: false
     afiliado: ""
 
   - nome: Natura
     dominio: www.natura.com.br
     tipo: auto
     marcas: [Natura, Una]
-    afiliado: ""
-
-  - nome: Océane
-    dominio: www.oceane.com.br
-    tipo: auto
-    marcas: [Océane, Oceane]
+    ativo: false
     afiliado: ""
 
   - nome: Vult
     dominio: www.vult.com.br
     tipo: auto
     marcas: [Vult]
+    ativo: false
     afiliado: ""
 
   - nome: Ruby Rose
     dominio: www.rubyrose.com.br
     tipo: auto
     marcas: [Ruby Rose]
-    afiliado: ""
-
-  - nome: Bruna Tavares
-    dominio: www.brunatavares.com
-    tipo: auto
-    marcas: [Bruna Tavares, BT]
-    afiliado: ""
-
-  - nome: Mari Maria Makeup
-    dominio: www.marimariamakeup.com
-    tipo: auto
-    marcas: [Mari Maria]
+    ativo: false
     afiliado: ""
 
   - nome: Lancôme
     dominio: www.lancome.com.br
     tipo: auto
     marcas: [Lancôme, Lancome]
-    afiliado: ""
-
-  - nome: Hinode
-    dominio: www.hinode.com.br
-    tipo: auto
-    marcas: [Hinode]
+    ativo: false
     afiliado: ""
 
   - nome: Drogaria São Paulo
     dominio: www.drogariasaopaulo.com.br
     tipo: auto
-  - nome: Pague Menos
-    dominio: www.paguemenos.com.br
-    tipo: auto
+    ativo: false
+    afiliado: ""
+
   - nome: Drogarias Pacheco
     dominio: www.drogariaspacheco.com.br
     tipo: auto
-  - nome: Amo Beleza
-    dominio: www.amobeleza.com.br
-    tipo: auto
-  - nome: Dailus
-    dominio: www.dailus.com.br
-    tipo: auto
-    marcas: [Dailus]
+    ativo: false
+    afiliado: ""
+
   - nome: Payot
     dominio: www.payot.com.br
     tipo: auto
     marcas: [Payot]
+    ativo: false
+    afiliado: ""
+
   - nome: Tracta
     dominio: www.tracta.com.br
     tipo: auto
     marcas: [Tracta]
+    ativo: false
+    afiliado: ""
+
   - nome: Max Love
     dominio: www.maxlove.com.br
     tipo: auto
     marcas: [Max Love]
-  - nome: Catharine Hill
-    dominio: www.catharinehill.com.br
-    tipo: auto
-    marcas: [Catharine Hill]
+    ativo: false
+    afiliado: ""
+
   - nome: Boca Rosa Beauty
     dominio: www.bocarosabeauty.com.br
     tipo: auto
     marcas: [Boca Rosa]
-  - nome: Bruna Tavares (br)
+    ativo: false
+    afiliado: ""
+
+  - nome: Bruna Tavares
     dominio: www.brunatavares.com.br
     tipo: auto
     marcas: [Bruna Tavares, BT]
+    ativo: false
+    afiliado: ""
+
   - nome: Fran by Franciny Ehlke
     dominio: www.franbyfe.com.br
     tipo: auto
     marcas: [Fran]
+    ativo: false
+    afiliado: ""
+
   - nome: Melu
     dominio: www.melu.com.br
     tipo: auto
     marcas: [Melu]
+    ativo: false
+    afiliado: ""
+
   - nome: Panvel
     dominio: www.panvel.com
     tipo: auto
-  - nome: Lojas Americanas
-    dominio: www.americanas.com.br
-    tipo: auto
+    ativo: false
+    afiliado: ""
+
   - nome: Magalu
     dominio: www.magazineluiza.com.br
     tipo: auto
+    ativo: false
+    afiliado: ""
+
   - nome: Clinique
     dominio: www.clinique.com.br
     tipo: auto
     marcas: [Clinique]
+    ativo: false
+    afiliado: ""
+
   - nome: Benefit
     dominio: www.benefitcosmetics.com.br
     tipo: auto
     marcas: [Benefit]
+    ativo: false
+    afiliado: ""
 
   - nome: Mercado Livre
     dominio: lista.mercadolivre.com.br
     tipo: mercadolivre
-    somente_oficial: false   # true = só "Loja oficial" (evita revendedor caro)
-    # Afiliados Mercado Livre: pegue seus parâmetros no painel de afiliados
-    # e coloque aqui, ex.: "{url}?matt_word=SEU_USUARIO&matt_tool=SEU_ID"
+    somente_oficial: false
+    ativo: false
     afiliado: ""
 
-# Links colados no formulário: o bot reconhece a loja pelo domínio.
-# Coloque aqui modelos de afiliado para domínios que não estão na lista acima.
 afiliados_por_dominio:
   amazon.com.br: ""
   shop.tiktok.com: ""

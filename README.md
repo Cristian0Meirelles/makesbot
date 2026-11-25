@@ -114,6 +114,9 @@ site (docs/)  ──cadastro──▶  Supabase  ◀──lê/grava──  bot (
 Rodar no seu PC (opcional): `pip install -r requirements.txt` e depois `python -m bot.main testar` ou `python -m bot.main rapido --seco` (sem enviar nada).
 
 ## Limitações (sendo honesto)
+- **Lojas que funcionam na busca automática** (teste de 25/11/2026): Época Cosméticos, Amo Beleza, Pague Menos, Lojas Americanas, Océane, Mari Maria Makeup, Dailus, Catharine Hill e Hinode.
+- **Sephora, Beleza na Web, MAC, Boticário, QDB, Natura, Vult e outras bloqueiam robôs** (respondem 403 para servidores). O bot respeita o bloqueio e não tenta burlar. O caminho certo para elas é o **feed de produtos do programa de afiliados** (Awin, Lomadee etc.), que traz preço e estoque de forma oficial, e você ainda ganha a comissão. Dá pra plugar depois.
+- **Mercado Livre** não entrega a página de busca para servidores. A forma oficial é a API do Mercado Livre com um app de desenvolvedor (grátis); dá pra adicionar depois.
 - **TikTok Shop** bloqueia robôs com frequência. Por isso só checamos 2x por dia e só por link colado. Se bloquear, aparece no log e o estado não muda (ninguém recebe aviso falso).
 - **Sites de marca** que não são VTEX/Shopify (o teste mostra ❌) só são monitorados pelos **links** que as pessoas colam. Funciona com qualquer página de produto que publique os dados padrão de produto (a maioria publica).
 - **Amazon** bloqueia robôs; cole o link e o bot tenta, mas pode não funcionar.
