@@ -124,4 +124,4 @@ Rodar no seu PC (opcional): `pip install -r requirements.txt` e depois `python -
 
 ---
 
-© 2026 Cristiano Meirelles. Todos os direitos reservados. Código proprietário, veja [LICENSE](LICENSE). Proibido copiar, modificar, redistribuir ou vender sem autorização por escrito do autor.
+© 2026 Cristiano Cotrin Meirelles. Todos os direitos reservados. Código proprietário, veja [LICENSE](LICENSE). Proibido copiar, modificar, redistribuir ou vender sem autorização por escrito do autor.
