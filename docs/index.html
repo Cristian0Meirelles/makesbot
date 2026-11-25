@@ -31,6 +31,8 @@ input,select,textarea{font:inherit;color:inherit}
 .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--rosa)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
+.sem-foto{width:100%;height:100%;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;color:#b9a5aa;background:var(--cinza-bg)}
+.sem-foto span{letter-spacing:.06em}
 /* demo */
 .demo-bar{background:var(--tinta);color:#f6e7e3;font-size:13px;text-align:center;padding:8px 14px}
 .demo-bar b{color:#fff}
@@ -80,7 +82,7 @@ nav .links a:hover{color:var(--tinta)}
 .sug{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:14px;cursor:pointer}
 .sug:hover,.sug.ativo{background:var(--creme2)}
 .sug .mini{width:46px;height:46px;border-radius:12px;background:var(--cinza-bg);flex:none;overflow:hidden;display:grid;place-items:center}
-.sug .mini img{width:100%;height:100%;object-fit:cover}
+.sug .mini img{width:100%;height:100%;object-fit:contain;background:#fff}
 .sug .t{font-weight:600;font-size:15.5px}
 .sug .t mark{background:none;color:var(--rosa)}
 .sug .s{font-size:13px;color:var(--suave)}
@@ -100,7 +102,7 @@ nav .links a:hover{color:var(--tinta)}
 .flutua:nth-child(3){bottom:0;right:0;animation-delay:-4.6s;transform:rotate(2deg)}
 @keyframes boia{0%,100%{translate:0 0}50%{translate:0 -12px}}
 .flutua .foto{aspect-ratio:1;border-radius:16px;overflow:hidden;background:var(--cinza-bg);display:grid;place-items:center}
-.flutua .foto img{width:100%;height:100%;object-fit:cover}
+.flutua .foto img{width:100%;height:100%;object-fit:contain;background:#fff;padding:8px}
 .flutua .m{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--suave);margin-top:10px;font-weight:600}
 .flutua .n{font-family:var(--serif);font-size:18px;line-height:1.15}
 .flutua .pill{position:absolute;top:22px;left:22px}
@@ -129,7 +131,7 @@ nav .links a:hover{color:var(--tinta)}
 .tipo span{font-size:13px;color:var(--suave)}
 .comparar{display:grid;grid-template-columns:340px 1fr;gap:34px}
 .comparar .foto-grande{aspect-ratio:1;border-radius:24px;background:var(--cinza-bg);overflow:hidden;display:grid;place-items:center;position:relative}
-.comparar .foto-grande img{width:100%;height:100%;object-fit:cover}
+.comparar .foto-grande img{width:100%;height:100%;object-fit:contain;background:#fff;padding:16px}
 .comparar .foto-grande .pill{position:absolute;top:14px;left:14px}
 .comparar h2{font-family:var(--serif);font-weight:400;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:4px 0 6px}
 .comparar .marca{font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--suave)}
@@ -178,7 +180,7 @@ section.bloco{padding:84px 0}
 .card{background:var(--papel);border-radius:var(--raio);border:1px solid var(--linha);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s, box-shadow .2s}
 .card:hover{transform:translateY(-4px);box-shadow:var(--sombra)}
 .card .foto{aspect-ratio:1.05;background:var(--cinza-bg);position:relative;display:grid;place-items:center;overflow:hidden}
-.card .foto img{width:100%;height:100%;object-fit:cover}
+.card .foto img{width:100%;height:100%;object-fit:contain;background:#fff;padding:10px}
 .card .foto .pill{position:absolute;top:12px;left:12px}
 .card .foto .cat{position:absolute;top:12px;right:12px;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.85);border-radius:999px;padding:4px 10px}
 .card .corpo{padding:16px 16px 18px;display:flex;flex-direction:column;gap:4px;flex:1}
@@ -499,78 +501,39 @@ const tempo = iso => { if (!iso) return ""; const m = Math.round((Date.now() - n
 const CATEGORIAS = ["Blush","Batom","Gloss","Lip tint","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador","Outro"];
 const MARCAS = ["MAC","Fenty Beauty","Rare Beauty","Charlotte Tilbury","NARS","Dior","Benefit","Too Faced","Huda Beauty","Urban Decay","Clinique","Lancôme","Estée Lauder","Make Up For Ever","Sephora Collection","Bruna Tavares","Boca Rosa Beauty","Mari Maria Makeup","Vult","Ruby Rose","Quem Disse, Berenice?","Océane","Natura","Eudora","Boticário","Make B.","Payot","Dailus","Fran by Franciny Ehlke","Melu","Tracta","Max Love","Catharine Hill","Hinode"];
 
-/* ------------------------------------------------ ilustrações (quando não há foto) */
-const PALETA = ["#c25b72","#d98a7e","#a3445b","#e7a3a0","#8e3b4e","#c97b5a","#b0566b","#e2b1a6","#7d2f40","#d4766f"];
-const corDe = s => { let h = 0; for (const c of norm(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; };
-function ilustra(cat, cor, tam = 120) {
-  const c = cor || "#c25b72", n = norm(cat);
-  let corpo;
-  if (/batom|lapis/.test(n)) corpo = `<rect x="44" y="62" width="32" height="44" rx="4" fill="#2b1a1f"/><rect x="47" y="46" width="26" height="20" rx="2" fill="#c9a97a"/><path d="M49 46 V24 q11 -14 22 4 V46z" fill="${c}"/>`;
-  else if (/gloss|tint/.test(n)) corpo = `<rect x="48" y="40" width="24" height="64" rx="10" fill="${c}" opacity=".85"/><rect x="51" y="14" width="18" height="30" rx="5" fill="#2b1a1f"/><rect x="54" y="48" width="12" height="48" rx="6" fill="#fff" opacity=".35"/>`;
-  else if (/base|corretivo|primer|fixador/.test(n)) corpo = `<rect x="38" y="44" width="44" height="62" rx="12" fill="${c}"/><rect x="50" y="26" width="20" height="20" rx="4" fill="#2b1a1f"/><rect x="45" y="56" width="10" height="38" rx="5" fill="#fff" opacity=".3"/>`;
-  else if (/sombra|paleta/.test(n)) corpo = `<rect x="20" y="34" width="80" height="56" rx="10" fill="#2b1a1f"/>${[0,1,2,3,4,5].map(i => `<circle cx="${36+(i%3)*24}" cy="${51+Math.floor(i/3)*22}" r="9" fill="${c}" opacity="${1-i*.12}"/>`).join("")}`;
-  else if (/mascara|delineador|sobrancelha/.test(n)) corpo = `<rect x="54" y="12" width="12" height="96" rx="6" fill="#2b1a1f" transform="rotate(25 60 60)"/><rect x="54" y="12" width="12" height="34" rx="6" fill="${c}" transform="rotate(25 60 60)"/>`;
-  else corpo = `<circle cx="60" cy="62" r="40" fill="#2b1a1f"/><circle cx="60" cy="62" r="31" fill="${c}"/><path d="M42 52 q18 -14 36 0" stroke="#fff" stroke-width="4" fill="none" opacity=".35" stroke-linecap="round"/>`;
-  return `<svg width="${tam}" height="${tam}" viewBox="0 0 120 120" aria-hidden="true">${corpo}</svg>`;
-}
-const fotoOu = (img, cat, cor, tam) => img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerHTML:${esc(JSON.stringify(ilustra(cat, cor, tam)))}}))">` : ilustra(cat, cor, tam);
+/* ------------------------------------------------ fotos (sempre reais; sem foto = aviso neutro) */
+const corDe = () => "";
+const semFoto = tam => `<div class="sem-foto" style="font-size:${tam < 60 ? 0 : 12}px"><svg width="${Math.max(18, tam / 4)}" height="${Math.max(18, tam / 4)}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="13" rx="3"/><circle cx="12" cy="12.5" r="3.2"/><path d="M8 6l1.5-2h5L16 6"/></svg>${tam >= 60 ? "<span>sem foto</span>" : ""}</div>`;
+const fotoOu = (img, _cat, _cor, tam = 120) => img
+  ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=${esc(JSON.stringify(semFoto(tam)))}">`
+  : semFoto(tam);
 
-/* ------------------------------------------------ dados de exemplo */
-const DEMO_LOJAS = [
-  {nome:"Sephora",dominio:"www.sephora.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"Beleza na Web",dominio:"www.belezanaweb.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"Época Cosméticos",dominio:"www.epocacosmeticos.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"MAC Cosmetics",dominio:"www.maccosmetics.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"O Boticário",dominio:"www.boticario.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"Quem Disse, Berenice?",dominio:"www.quemdisseberenice.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"Mercado Livre",dominio:"www.mercadolivre.com.br",frequencia:"a cada 5 min",ok:true},
-  {nome:"TikTok Shop",dominio:"shop.tiktok.com",frequencia:"2x por dia",ok:true},
-];
-const agoraISO = m => new Date(Date.now() - m * 60000).toISOString();
-function demoCatalogo() {
-  const L = [], add = (loja, marca, produto, cor, categoria, preco, disp, min) => L.push({loja, marca, produto, cor, categoria, titulo:`${produto} - ${cor}`, url:"https://exemplo.com/" + norm(loja + produto + cor).replace(/ /g, "-"), imagem:null, preco, disponivel:disp, busca:norm(`${marca} ${produto} ${cor} ${categoria}`), atualizado_em:agoraISO(min)});
-  [["Film Noir Buff",false],["Melba",true],["Peaches",true],["Desert Rose",false],["Fleur Power",true]].forEach(([c, d], i) => {
-    add("MAC Cosmetics","MAC","Powder Blush",c,"Blush",210,d && i !== 4,3);
-    add("Sephora","MAC","Powder Blush",c,"Blush",219.9,d,4);
-    add("Época Cosméticos","MAC","Powder Blush",c,"Blush",205.9,i === 2,6);
-    add("Mercado Livre","MAC","Powder Blush",c,"Blush",289,i !== 0,8);
-  });
-  [["Film Noir Buff",true],["Ruby Woo",true],["Velvet Teddy",false],["Mehr",true]].forEach(([c, d]) => {
-    add("MAC Cosmetics","MAC","Batom Matte Lipstick",c,"Batom",165,d,3);
-    add("Sephora","MAC","Batom Matte Lipstick",c,"Batom",169.9,!d,5);
-    add("Beleza na Web","MAC","Batom Matte Lipstick",c,"Batom",162.9,d,9);
-  });
-  [["Pillow Talk",false],["Walk of No Shame",true]].forEach(([c, d]) => {
-    add("Sephora","Charlotte Tilbury","Matte Revolution Lipstick",c,"Batom",289,d,4);
-    add("Beleza na Web","Charlotte Tilbury","Matte Revolution Lipstick",c,"Batom",279.9,false,7);
-  });
-  [["Hope",false],["Joy",true],["Believe",true]].forEach(([c, d]) => {
-    add("Sephora","Rare Beauty","Soft Pinch Blush Líquido",c,"Blush",229,d,2);
-    add("Mercado Livre","Rare Beauty","Soft Pinch Blush Líquido",c,"Blush",310,true,10);
-  });
-  [["Nude",true],["Rose",false]].forEach(([c, d]) => {
-    add("Quem Disse, Berenice?","Quem Disse, Berenice?","Blush Bastão",c,"Blush",59.9,d,6);
-    add("O Boticário","Quem Disse, Berenice?","Blush Bastão",c,"Blush",59.9,d,6);
-  });
-  add("Sephora","Fenty Beauty","Gloss Bomb","Fenty Glow","Gloss",169,true,5);
-  add("Sephora","Fenty Beauty","Gloss Bomb","Fu$$y","Gloss",169,false,5);
-  add("Beleza na Web","Bruna Tavares","BT Skin Base","F20","Base",129.9,true,12);
-  add("Época Cosméticos","Bruna Tavares","BT Skin Base","F20","Base",124.9,false,12);
-  return L;
+/* ------------------------------------------------ demonstração: produtos REAIS de docs/demo.json */
+let DEMO_DADOS = null;
+async function carregarDemo() {
+  if (DEMO_DADOS) return DEMO_DADOS;
+  try { DEMO_DADOS = await (await fetch("demo.json", {cache: "no-cache"})).json(); }
+  catch (e) { console.warn("demo.json", e); DEMO_DADOS = {lojas: [], catalogo: []}; }
+  return DEMO_DADOS;
 }
+function demoCatalogo() { return (DEMO_DADOS && DEMO_DADOS.catalogo) || []; }
 function demoRadar() {
-  const p = (id, categoria, marca, nome, cor, disp, ofertas) => ({id, categoria, marca, nome, cor, disponivel:disp, imagem_loja:null, foto_url:null, criado_em:agoraISO(id*90), ultima_verificacao:agoraISO(2), disponivel_desde: disp ? agoraISO(id*7) : null, ofertas});
-  const o = (loja, preco, disp) => ({loja, preco, disponivel:disp, url:"https://exemplo.com", url_afiliado:null, atualizado_em:agoraISO(2)});
-  return [
-    p(1,"Blush","MAC","Powder Blush","Film Noir Buff",false,[o("MAC Cosmetics",210,false),o("Sephora",219.9,false),o("Época Cosméticos",205.9,false)]),
-    p(2,"Blush","Rare Beauty","Soft Pinch Blush Líquido","Joy",true,[o("Sephora",229,true),o("Mercado Livre",310,true)]),
-    p(3,"Batom","Charlotte Tilbury","Matte Revolution Lipstick","Pillow Talk",false,[o("Sephora",289,false),o("Beleza na Web",279.9,false)]),
-    p(4,"Gloss","Fenty Beauty","Gloss Bomb","Fenty Glow",true,[o("Sephora",169,true)]),
-    p(5,"Base","Bruna Tavares","BT Skin Base","F20",true,[o("Beleza na Web",129.9,true),o("Época Cosméticos",124.9,false)]),
-    p(6,"Batom","MAC","Batom Matte Lipstick","Velvet Teddy",false,[o("MAC Cosmetics",165,false),o("Sephora",169.9,true)].map((x,i)=>({...x,disponivel:i===1}))),
-    p(7,"Blush","Quem Disse, Berenice?","Blush Bastão","Rose",false,[o("Quem Disse, Berenice?",59.9,false)]),
-    p(8,"Sombra","Huda Beauty","Paleta Nude Obsessions","Rich",false,[o("Sephora",259,false)]),
-  ].map(x => ({...x, disponivel: x.ofertas.some(o => o.disponivel)}));
+  // monta a vitrine com produtos reais do catálogo (um por grupo, vários tipos)
+  const grupos = new Map();
+  for (const r of demoCatalogo()) { const g = grupos.get(r.grupo) || []; g.push(r); grupos.set(r.grupo, g); }
+  const usadas = new Set(), saida = [];
+  const lista = [...grupos.values()].filter(g => g.some(r => r.imagem)).sort((a, b) => b.length - a.length);
+  for (const g of lista) {
+    const ref = g.find(r => r.imagem && r.cor) || g.find(r => r.imagem);
+    if (usadas.has(ref.categoria) && saida.length < 6) continue;
+    usadas.add(ref.categoria);
+    const doTom = g.filter(r => norm(r.cor) === norm(ref.cor));
+    saida.push({id: ref.grupo, categoria: ref.categoria, marca: ref.marca || "", nome: ref.produto, cor: ref.cor,
+      disponivel: doTom.some(r => r.disponivel), imagem_loja: ref.imagem, foto_url: null, criado_em: ref.atualizado_em,
+      disponivel_desde: ref.atualizado_em, ofertas: doTom.map(r => ({loja: r.loja, preco: r.preco, disponivel: r.disponivel, url: r.url, url_afiliado: r.url_afiliado, imagem: r.imagem, atualizado_em: r.atualizado_em}))});
+    if (saida.length >= 12) break;
+  }
+  return saida;
 }
 
 /* ------------------------------------------------ acesso ao Supabase */
@@ -586,7 +549,7 @@ async function api(caminho, {method = "GET", body, headers = {}} = {}) {
 }
 const rpc = (nome, args) => api(`rpc/${nome}`, {method: "POST", body: args});
 
-let LOJAS = [], RADAR = [], CATALOGO_DEMO = null;
+let LOJAS = [], RADAR = [];
 const dominioDe = loja => (LOJAS.find(l => l.nome === loja) || {}).dominio || "";
 function logoLoja(loja) {
   const d = dominioDe(loja), ini = esc((loja || "?").replace(/[^A-Za-zÀ-ú0-9]/g, "").slice(0, 2).toUpperCase());
@@ -596,7 +559,7 @@ function logoLoja(loja) {
 async function buscarCatalogo(termo, limite = 400) {
   const ts = toks(termo).slice(0, 6);
   if (!ts.length) return [];
-  if (DEMO) { CATALOGO_DEMO ||= demoCatalogo(); return CATALOGO_DEMO.filter(r => ts.every(t => r.busca.includes(t))); }
+  if (DEMO) { await carregarDemo(); return demoCatalogo().filter(r => ts.every(t => (r.busca || "").includes(t))); }
   const filtro = ts.map(t => `busca.ilike.*${t}*`).join(",");
   return api(`catalogo?select=loja,marca,produto,cor,categoria,titulo,url,url_afiliado,imagem,preco,disponivel,atualizado_em&and=(${encodeURIComponent(filtro)})&order=disponivel.desc,preco.asc.nullslast&limit=${limite}`);
 }
@@ -740,7 +703,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
         <h2>${esc(ref.produto)}</h2>
         <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${esc(corNome)}</b> · ` : ""}${disp.length ? `<b>Tem em ${disp.length} loja${disp.length > 1 ? "s" : ""}</b>${disp[0].preco ? ", a partir de " + brl(Math.min(...disp.filter(d => d.preco).map(d => d.preco))) : ""}` : "Esgotado em todas as lojas que acompanhamos"}</div>
         ${cores.size > 1 ? `<div class="cores-titulo">Outras cores (${cores.size})</div><div class="cores">${[...cores].map(([k, c]) => `
-          <button class="cor${k === corAtual ? " on" : ""}" data-k="${esc(k)}"><span class="bol">${c.img ? `<img src="${esc(c.img)}" alt="" loading="lazy">` : `<span style="display:block;width:100%;height:100%;background:${corDe(c.nome)}"></span>`}</span>${esc(c.nome)}${c.disp ? '<span class="d" title="tem em estoque"></span>' : ""}</button>`).join("")}</div>` : ""}
+          <button class="cor${k === corAtual ? " on" : ""}" data-k="${esc(k)}"><span class="bol">${c.img ? `<img src="${esc(c.img)}" alt="" loading="lazy">` : `<span style="display:grid;place-items:center;width:100%;height:100%;font-size:10px;font-weight:700">${esc((c.nome || "?").slice(0, 2).toUpperCase())}</span>`}</span>${esc(c.nome)}${c.disp ? '<span class="d" title="tem em estoque"></span>' : ""}</button>`).join("")}</div>` : ""}
         <div class="lojas-lista">${lista.map(r => `
           <div class="linha-loja${r.disponivel ? " disp" : ""}">
             ${logoLoja(r.loja)}
@@ -909,10 +872,12 @@ function talvezCancelar() {
 /* ------------------------------------------------ util */
 let tt; function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tt); tt = setTimeout(() => t.classList.remove("on"), 3200); }
 addEventListener("scroll", () => $("#topo").classList.toggle("rolou", scrollY > 10), {passive: true});
-["Film Noir", "Soft Pinch", "Pillow Talk", "Ruby Woo", "Gloss Bomb"].forEach(t => {
-  const b = document.createElement("button"); b.type = "button"; b.textContent = t;
-  b.onclick = () => { q.value = t; q.focus(); aoDigitar(); }; $("#exemplos").appendChild(b);
-});
+function exemplos(nomes) {
+  [...new Set(nomes.filter(Boolean))].slice(0, 5).forEach(t => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = t;
+    b.onclick = () => { q.value = t; q.focus(); aoDigitar(); }; $("#exemplos").appendChild(b);
+  });
+}
 const anima = (el, n) => { n = +n || 0; let i = 0; const passos = 24; const f = () => { i++; el.textContent = Math.round(n * i / passos).toLocaleString("pt-BR"); if (i < passos) requestAnimationFrame(f); }; f(); };
 
 /* ------------------------------------------------ carregar */
@@ -925,10 +890,14 @@ async function iniciar() {
   if (C.contato) $("#rodapeTxt").textContent += " Contato: " + C.contato;
   talvezCancelar();
   try {
-    LOJAS = DEMO ? DEMO_LOJAS : await api("lojas?select=*&order=nome");
-    if (!LOJAS.length) LOJAS = DEMO_LOJAS.map(l => ({...l, ok: null}));
+    if (DEMO) {
+      const d = await carregarDemo();
+      if (d.gerado_em) $("#demoBar").innerHTML = `<b>Prévia:</b> produtos, fotos, preços e estoque reais das lojas, capturados ${esc(tempo(d.gerado_em))}. Alertas ainda não são salvos.`;
+    }
+    LOJAS = DEMO ? (DEMO_DADOS.lojas || []) : await api("lojas?select=*&order=nome");
     renderLojas();
     await carregarRadar();
+    exemplos(RADAR.map(p => (p.cor && p.cor.length < 22 ? p.cor : p.nome.split(" ").slice(0, 3).join(" "))));
     const est = DEMO ? {produtos: RADAR.length, lojas: LOJAS.length, catalogo: demoCatalogo().length} : await rpc("estatisticas", {});
     anima($("#nProdutos"), est.produtos); anima($("#nLojas"), est.lojas || LOJAS.length); anima($("#nCatalogo"), est.catalogo);
   } catch (e) {

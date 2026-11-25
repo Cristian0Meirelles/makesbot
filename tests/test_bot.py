@@ -173,3 +173,14 @@ def test_catalogo_linha_e_categoria():
     l = linha_catalogo(o, "Blush", dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc), "https://a/?u={url_enc}")
     assert l["marca"] == "MAC" and l["cor"] == "Film Noir" and l["grupo"] == "mac|blush powder"
     assert "film noir" in l["busca"] and l["url_afiliado"].startswith("https://a/?u=https%3A")
+
+
+def test_vtex_dominio_publico_e_cor_curta():
+    dados = [{"productName": "Gloss Labial Latika - Lip Gloss", "brand": "Latika",
+              "link": "https://epoca.vtexcommercestable.com.br/gloss/p",
+              "items": [{"itemId": "9", "name": "Gloss Labial Latika - Lip Gloss N07 Lilás",
+                         "nameComplete": "Gloss Labial Latika - Lip Gloss N07 Lilás", "images": [],
+                         "sellers": [{"commertialOffer": {"Price": 30.9, "AvailableQuantity": 1}}]}]}]
+    o = L.ofertas_vtex("Época", "www.epocacosmeticos.com.br", dados)[0]
+    assert o.url.startswith("https://www.epocacosmeticos.com.br/gloss/p")
+    assert o.extra["cor"] == "N07 Lilás"

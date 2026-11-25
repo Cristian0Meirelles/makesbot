@@ -88,6 +88,10 @@ def ofertas_vtex(loja: str, dominio: str, produtos: list) -> list[Oferta]:
     for p in produtos or []:
         nome = p.get("productName") or p.get("productTitle") or ""
         link = _abs(dominio, p.get("link") or (f"/{p.get('linkText')}/p" if p.get("linkText") else None))
+        # a VTEX às vezes devolve o endereço interno (loja.vtexcommercestable.com.br): troca pelo domínio público
+        partes = urlparse(link)
+        if partes.netloc and partes.netloc != dominio and "vtex" in partes.netloc:
+            link = partes._replace(netloc=dominio).geturl()
         itens = p.get("items") or []
         for item in itens:
             sku = (item.get("nameComplete") or item.get("name") or "").strip()
@@ -109,9 +113,14 @@ def ofertas_vtex(loja: str, dominio: str, produtos: list) -> list[Oferta]:
             if len(itens) > 1 and item.get("itemId"):
                 url += ("&" if "?" in url else "?") + f"skuId={item['itemId']}"
             cats = p.get("categories") or []
+            cor = (item.get("name") or "").strip()
+            if normalizar(nome) and normalizar(cor).startswith(normalizar(nome)):
+                cor = cor[len(nome):].strip(" -–|")
+            if normalizar(cor) == normalizar(nome) or normalizar(cor) in normalizar(nome):
+                cor = ""
             saida.append(Oferta(loja, titulo, url, disp, img, preco, extra={
                 "marca": p.get("brand"), "produto": nome,
-                "cor": sku if sku and normalizar(sku) != normalizar(nome) else None,
+                "cor": cor or None,
                 "categorias": " ".join(c if isinstance(c, str) else str(c.get("name", "")) for c in cats),
             }))
     return saida
