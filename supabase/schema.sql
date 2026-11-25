@@ -135,6 +135,12 @@ create policy "ofertas publicas" on public.ofertas for select to anon, authentic
 drop policy if exists "lojas publicas" on public.lojas;
 create policy "lojas publicas" on public.lojas for select to anon, authenticated using (true);
 
+-- Permissões explícitas (funciona mesmo se o "Grant API access" estiver desligado)
+grant usage on schema public to anon, authenticated, service_role;
+grant select on public.produtos, public.ofertas, public.lojas, public.catalogo to anon, authenticated;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+
 -- ---------------------------------------------------------------------
 -- Funções chamadas pelo site
 -- ---------------------------------------------------------------------
