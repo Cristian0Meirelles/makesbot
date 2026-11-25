@@ -2,7 +2,7 @@
 // (Supabase → Project Settings → API). A chave "anon" é pública mesmo,
 // pode ficar aqui sem problema. NUNCA coloque a chave service_role aqui.
 window.VOLTOU_CONFIG = {
-  supabaseUrl: "",        // ex.: "https://abcdefgh.supabase.co"
+  supabaseUrl: "https://bqplukmddnarmtzhjbtn.supabase.co",
   supabaseAnonKey: "",    // ex.: "eyJhbGciOiJIUzI1NiIs..."
   // Número do robô CallMeBot que ativa o WhatsApp (confira em callmebot.com)
   callmebotNumero: "+34 684 78 37 08",
