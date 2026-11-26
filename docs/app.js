@@ -190,6 +190,12 @@ async function carregarOficiais() {
   try { OFICIAIS = (await (await fetch("oficiais.json", {cache: "no-cache"})).json()).marcas || []; } catch { OFICIAIS = []; }
   return OFICIAIS;
 }
+function linkProduto(valor) {
+  try {
+    const url = new URL(valor);
+    return url.protocol === "https:" && url.pathname.replace(/\//g, "").length > 0;
+  } catch { return false; }
+}
 function oficialDe(marca) {
   const m = norm(marca);
   if (!m || !OFICIAIS) return null;
@@ -240,7 +246,6 @@ async function abrirComparacao(g, cat, corEscolhida) {
   await carregarOficiais();
   const oficial = oficialDe(ref.marca);
   const temOficialNaLista = oficial && lista.some(r => r.loja === oficial.loja);
-  let linkOficial = "";
   // loja oficial já está no catálogo mas com outro nome de produto? procura lá e mostra o preço
   const GENERICAS = new Set(["blush","batom","base","gloss","labial","liquido","liquida","po","compacto","em","de","da","do","bastao","stick","edition","matte","maquiagem","facial","cor","lip","tint","sombra","paleta","corretivo","iluminador","mascara","cilios","delineador","primer","fixador","pro","new","novo","nova"]);
   if (oficial && oficial.loja && !temOficialNaLista && !DEMO) {
@@ -261,11 +266,6 @@ async function abrirComparacao(g, cat, corEscolhida) {
   lista.sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
   disp = lista.filter(r => r.disponivel);
   melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
-  if (oficial && !temOficialAgora) {
-    const marcaTs = new Set(toks(oficial.marca).concat(...(oficial.apelidos || []).map(toks)));
-    const q = toks(nomeProduto).filter(t => !marcaTs.has(t) && !/^\d+(ml|g)?$/.test(t)).slice(0, 5).join(" ");
-    linkOficial = oficial.busca && q ? oficial.busca.replaceAll("{q}", encodeURIComponent(q)) : oficial.site;
-  }
   const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
   alvo().innerHTML = `<div class="painel">
@@ -285,18 +285,13 @@ async function abrirComparacao(g, cat, corEscolhida) {
             ${logoLoja(r.loja)}
             <div style="min-width:0"><div class="ln">${esc(r.loja)}${oficial && r.loja === oficial.loja ? SELO_OFICIAL : ""}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${!r.cor && temCores ? "Várias cores · escolha a sua na loja" : esc(r.titulo)}</div></div>
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
-            ${r.disponivel ? `<a class="btn btn-esc btn-sm" href="${esc(urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">Comprar</a>` : `<a class="btn btn-linha btn-sm" href="${esc(urlSegura(r.url))}" target="_blank" rel="noopener">Ver</a>`}
+            ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.loja === oficial?.loja ? r.url : urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">${r.disponivel ? "Comprar" : "Ver produto"}</a>` : "<small>Link do item pendente</small>"}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
-          ${linkOficial ? `<div class="linha-loja oficial">
-            <div class="logo-loja"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(oficial.site).host)}&sz=64" alt="" data-remover></div>
-            <div style="min-width:0"><div class="ln">${esc(oficial.marca)}${SELO_OFICIAL}</div><div class="lt">Veja preço e cores direto no site da marca</div></div>
-            <div class="preco" style="font-size:13px;font-weight:600;color:var(--suave)">no site<small>oficial</small></div>
-            <a class="btn btn-linha btn-sm" href="${esc(urlSegura(linkOficial))}" target="_blank" rel="noopener">Ver no site</a>
-          </div>` : ""}</div>
+          ${oficial && !temOficialAgora ? `<div class="linha-loja oficial"><div><b>${esc(oficial.marca)}</b> ${SELO_OFICIAL}<div class="lt">Preço e estoque desta cor aguardando confirmação.</div></div></div>` : ""}</div>
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
         </div>
-        <div class="atualizado">Estoque conferido ${tempo(recente)}. Preço e estoque podem mudar na loja. Ainda não acompanhamos Sephora, MAC, Beleza na Web e Mercado Livre.</div>
+        <div class="atualizado">Estoque conferido ${tempo(recente)}. Preço e estoque podem mudar na loja.</div>
       </div>
     </div></div>`;
   const raiz = alvo();

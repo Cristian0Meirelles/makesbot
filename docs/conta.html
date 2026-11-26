@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Minha conta | Voltou!</title>
+<style>
+*{box-sizing:border-box}body{background:#fbf5f2;color:#2b1a1f;font:1rem/1.55 system-ui;margin:0}
+main{max-width:29rem;margin:8vh auto;padding:2rem;background:#fff;border-radius:1.5rem}
+h1{font:2.5rem Georgia;margin-bottom:.5rem}a{color:#963c58}label{display:block;margin-top:1rem}
+input,button{font:inherit;border:1px solid #cfbac0;border-radius:.7rem;padding:.7rem}input{width:100%}
+button{margin:.9rem .3rem 0 0;cursor:pointer;background:#fbf5f2}button.primary{background:#993d59;color:white}
+</style>
+<main><a href="./">← Voltar ao Voltou!</a><h1>Minha conta</h1>
+<form id="acesso"><label>E-mail<input id="email" type="email" required autocomplete="username"></label>
+<label>Senha<input id="senha" type="password" required autocomplete="current-password"></label>
+<button class="primary" value="entrar">Entrar</button><button value="cadastrar">Criar conta</button></form>
+<section id="perfil" hidden><p>Você entrou como <strong id="identidade"></strong>.</p><a href="./#catalogo">Ver catálogo</a>
+<button id="sair">Sair</button></section><p role="status" id="mensagem"></p></main>
+<script src="config.js" defer></script><script src="conta.js" defer></script></html>

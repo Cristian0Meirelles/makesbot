@@ -2,6 +2,7 @@
 import datetime as dt
 import os
 import json
+from pathlib import Path
 
 from .catalogo import linha_catalogo, montar_vitrine
 from .db import SupabaseDB
@@ -58,15 +59,20 @@ def atualizar():
             print(f"{loja}: {len(lidas)} oferta(s) confirmadas")
         except Exception as erro:
             print(f"::warning::{loja}: leitura inconclusiva ({type(erro).__name__})")
-    if not ofertas:
-        raise RuntimeError("Nenhuma variante prioritária confirmada nesta rodada.")
     db = SupabaseDB(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
     agora = dt.datetime.now(dt.timezone.utc)
+    arquivo = Path(__file__).resolve().parents[1] / "config/film_noir_verificado.json"
+    anteriores = json.loads(arquivo.read_text(encoding="utf-8"))
+    # Inicialização idempotente. Nunca sobrescreve uma coleta posterior nem renova a data.
+    db._req("POST", "catalogo?on_conflict=loja,url", json=anteriores,
+            headers={"Prefer": "resolution=ignore-duplicates,return=minimal"})
     linhas = [linha_catalogo(o, "Blush", agora, "") for o in ofertas]
     db.salvar_catalogo(linhas)
-    grupos = sorted({l["grupo"] for l in linhas})
+    grupos = sorted({l["grupo"] for l in linhas + anteriores})
     db.salvar_vitrine(montar_vitrine(db.catalogo_por_grupos(grupos), agora))
     print(f"Film Noir Buff: {len(linhas)} oferta(s) verificadas e vitrine atualizada.")
+    if not ofertas:
+        raise RuntimeError("Vitrine publicada com a última leitura. Lojas sem confirmação nova.")
 
 
 if __name__ == "__main__":

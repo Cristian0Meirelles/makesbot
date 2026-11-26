@@ -1,0 +1,38 @@
+[
+  {
+    "loja": "MAC Cosmetics",
+    "marca": "MAC",
+    "produto": "Blush em Pó Skinfinish Colourstruck",
+    "cor": "Film Noir Buff",
+    "categoria": "Blush",
+    "titulo": "Blush em Pó Skinfinish Colourstruck - Film Noir Buff",
+    "url": "https://www.maccosmetics.com.br/product/13842/143488/produtos/maquiagem/rosto/blush/blush-em-po-skinfinish-colourstruck?shade=Film%20Noir%20Buff",
+    "url_afiliado": null,
+    "imagem": "https://sdcdn.io/mac/br/mac_sku_S9PB15_1x1_0.png?width=1440&height=1440",
+    "preco": 183.0,
+    "disponivel": false,
+    "busca": "mac blush em po skinfinish colourstruck film noir buff blush mac cosmetics",
+    "grupo": "mac|blush colourstruck po skinfinish",
+    "familia": "Preto",
+    "tom": null,
+    "atualizado_em": "2026-11-26T21:13:38.071633+00:00"
+  },
+  {
+    "loja": "Magalu",
+    "marca": "MAC",
+    "produto": "Powder Blush",
+    "cor": "Film Noir",
+    "categoria": "Blush",
+    "titulo": "Powder Blush MAC - Blush em Pó",
+    "url": "https://www.magazineluiza.com.br/powder-blush-mac-blush-em-po/p/ae3800ea1h/pf/pfbm/",
+    "url_afiliado": null,
+    "imagem": "https://a-static.mlcdn.com.br/450pxx450px/powder-blush-mac-blush-em-po/epocacosmeticos-integra/40032/8358bead5e65fd18be29d8e2f47c99c1.jpeg",
+    "preco": 169.0,
+    "disponivel": false,
+    "busca": "mac powder blush film noir blush magalu",
+    "grupo": "mac|blush powder",
+    "familia": "Preto",
+    "tom": null,
+    "atualizado_em": "2026-11-26T21:13:38.072009+00:00"
+  }
+]
