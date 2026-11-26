@@ -17,6 +17,6 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for wf in radar.yml tiktok.yml catalogo.yml manter-ativo.yml; do
+          for wf in radar.yml tiktok.yml catalogo.yml feeds.yml manter-ativo.yml; do
             gh api -X PUT "repos/${{ github.repository }}/actions/workflows/$wf/enable" && echo "ok $wf"
           done

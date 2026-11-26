@@ -189,6 +189,25 @@ def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = No
                 salvar(linhas)
                 total += len(linhas)
                 todas.extend(linhas)
+    # feeds oficiais de afiliados (Awin): MAC, Beleza na Web, Boticário, Natura...
+    from .feeds import baixar_awin
+    feed = []
+    for o in baixar_awin():
+        cat = categoria_de(o, None)
+        if cat == "Outro":
+            continue
+        l = linha_catalogo(o, cat, agora, "")
+        l["url_afiliado"] = o.url_afiliado
+        feed.append(l)
+    if feed:
+        vistos = {}
+        for l in feed:
+            vistos[(l["loja"], l["url"])] = l
+        feed = list(vistos.values())
+        salvar(feed)
+        todas.extend(feed)
+        total += len(feed)
+        log.info("Feeds de afiliados: %d itens de maquiagem", len(feed))
     limpar(agora - LIMPAR_APOS)
     if salvar_vitrine:
         vit = montar_vitrine(todas, agora)

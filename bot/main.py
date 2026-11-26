@@ -2,6 +2,7 @@
 Uso:
   python -m bot.main rapido            # todas as lojas + links (menos TikTok) — roda a cada 5 min
   python -m bot.main tiktok            # só links do TikTok Shop — roda 2x por dia
+  python -m bot.main feeds             # feeds oficiais de afiliados (Awin) — 1x por hora
   python -m bot.main catalogo          # atualiza o catálogo do autocompletar — 1x por dia
   python -m bot.main testar            # mostra quais lojas estão respondendo
   python -m bot.main testar --email voce@gmail.com --whatsapp 5511999999999 --callmebot 123456
@@ -87,7 +88,7 @@ def testar(cfg: dict, args) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["rapido", "tiktok", "tudo", "catalogo", "testar"], nargs="?", default="rapido")
+    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "testar"], nargs="?", default="rapido")
     ap.add_argument("--seco", action="store_true")
     ap.add_argument("--email")
     ap.add_argument("--whatsapp")

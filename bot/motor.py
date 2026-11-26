@@ -108,8 +108,25 @@ class Motor:
         return modelo.replace("{url_enc}", url_codificada(url)).replace("{url}", url)
 
     # ------------------------------------------------------------------ tarefas
+    def _feed_por_loja(self) -> dict[str, list[Oferta]]:
+        if not hasattr(self, "_feed_cache"):
+            from .feeds import baixar_awin
+            grupos: dict[str, list[Oferta]] = defaultdict(list)
+            for o in baixar_awin():
+                grupos[o.loja].append(o)
+            self._feed_cache = dict(grupos)
+        return self._feed_cache
+
     def _tarefas(self, modo: str, alvos: list[dict]):
         """Gera (produto, nome_loja, função)."""
+        if modo in ("feeds", "tudo"):
+            for loja, ofertas in self._feed_por_loja().items():
+                for p in alvos:
+                    da_marca = bool(normalizar(p.get("marca")) and normalizar(p.get("marca")).split()[0] in normalizar(loja))
+                    yield p, loja, (lambda ofertas=ofertas, p=p, da_marca=da_marca:
+                                    [o for o in ofertas if combina(p, f"{o.titulo} {o.extra.get('cor') or ''}", da_marca)])
+            if modo == "feeds":
+                return
         for p in alvos:
             if modo in ("rapido", "tudo"):
                 for loja in self.lojas:
@@ -194,7 +211,7 @@ class Motor:
             top = unicas[:MAX_OFERTAS_POR_LOJA]
             linhas = []
             for o in top:
-                o.url_afiliado = self._afiliar(loja, o.url)
+                o.url_afiliado = o.url_afiliado or self._afiliar(loja, o.url)
                 linhas.append({"produto_id": p["id"], "loja": loja, "titulo": o.titulo[:300], "url": o.url,
                                "url_afiliado": o.url_afiliado, "imagem": o.imagem, "preco": o.preco,
                                "disponivel": o.disponivel, "atualizado_em": self.agora.isoformat()})
@@ -250,6 +267,11 @@ class Motor:
                                "tipo": self._tipo_detectado.get(l["nome"], l.get("tipo")),
                                "frequencia": "a cada 5 min", "ok": self._status_loja.get(l["nome"]),
                                "atualizado_em": self.agora.isoformat()})
+        if modo in ("feeds", "tudo") and getattr(self, "_feed_cache", None):
+            from .feeds import DOMINIOS
+            for loja in self._feed_cache:
+                linhas.append({"nome": loja, "dominio": DOMINIOS.get(loja), "tipo": "feed afiliado",
+                               "frequencia": "a cada hora", "ok": True, "atualizado_em": self.agora.isoformat()})
         if modo in ("tiktok", "tudo"):
             linhas.append({"nome": "TikTok Shop", "dominio": "shop.tiktok.com", "tipo": "link",
                            "frequencia": "2x por dia", "ok": self._status_loja.get("TikTok Shop"),

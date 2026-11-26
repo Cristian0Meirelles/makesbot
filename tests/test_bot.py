@@ -228,3 +228,32 @@ def test_nao_maquiagem():
     masc = Oferta("L", "x", "u", True, extra={"produto": "Máscara de Cílios Lash Up", "categorias": ""})
     assert categoria_de(perf, "Blush") == "Outro" and categoria_de(pincel, "Blush") == "Outro"
     assert categoria_de(blush, None) == "Blush" and categoria_de(masc, None) == "Máscara de cílios"
+
+
+# ---------------------------------------------------------------- feeds de afiliados
+FEED = """aw_deep_link,product_name,merchant_name,brand_name,search_price,in_stock,merchant_image_url,merchant_deep_link,colour,merchant_category
+https://www.awin1.com/pclick.php?p=1&a=3167898,Powder Blush,MAC Cosmeticos BR,MAC,210.00,1,https://img/mac.jpg,https://www.maccosmetics.com.br/product/powder-blush,Film Noir,Maquiagem > Rosto > Blush
+https://www.awin1.com/pclick.php?p=2&a=3167898,Perfume Rose,MAC Cosmeticos BR,MAC,300.00,1,https://img/p.jpg,https://www.maccosmetics.com.br/product/perfume,,Perfumaria
+https://www.awin1.com/pclick.php?p=3&a=3167898,Batom Matte,BELEZA NA WEB BR,Vult,25.90,0,https://img/v.jpg,https://www.belezanaweb.com.br/batom,Nude,Maquiagem
+"""
+
+
+def test_feed_awin_parse():
+    from bot.feeds import ofertas_de_csv
+    of = ofertas_de_csv(FEED)
+    assert [o.loja for o in of] == ["MAC Cosmetics", "MAC Cosmetics", "Beleza na Web"]
+    assert of[0].disponivel and not of[2].disponivel and of[0].url_afiliado.startswith("https://www.awin1.com")
+    assert of[0].extra["cor"] == "Film Noir" and of[0].preco == 210
+
+
+def test_motor_feeds_avisa_com_link_afiliado(monkeypatch):
+    from bot import feeds
+    from bot.feeds import ofertas_de_csv
+    monkeypatch.setattr(feeds, "baixar_awin", lambda urls=None: ofertas_de_csv(FEED))
+    produto = {"id": "p1", "categoria": "Blush", "marca": "MAC", "nome": "Powder Blush", "cor": "Film Noir", "links": [],
+               "ativo": True, "disponivel": False,
+               "inscricoes": [{"id": "i1", "email": "a@b.com", "token": "t", "ativo": True}]}
+    db = MemDB([produto]); n = Notificador(seco=True)
+    Motor(db, {"lojas": []}, n, trabalhadores=1).rodar("feeds")
+    assert len(n.enviados) == 1 and "awin1.com" in n.enviados[0]["texto"] and "MAC Cosmetics" in n.enviados[0]["texto"]
+    assert "MAC Cosmetics" in db.lojas
