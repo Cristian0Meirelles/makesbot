@@ -279,6 +279,8 @@ async function abrirComparacao(g, cat, corEscolhida) {
   await carregarOficiais();
   const oficial = oficialDe(ref.marca);
 
+  const oficialDoProduto = oficial && !porLoja.has(oficial.loja)
+    && (g.ofertasDoGrupo || base).find(r => r.loja === oficial.loja && linkProduto(r.url));
   const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
   alvo().innerHTML = `<div class="painel">
@@ -300,6 +302,9 @@ async function abrirComparacao(g, cat, corEscolhida) {
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.loja === oficial?.loja ? r.url : urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">${r.disponivel ? "Comprar" : "Ver produto"}</a>` : "<small>Link do item pendente</small>"}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
+          ${oficialDoProduto ? `<div class="linha-loja oficial">${logoLoja(oficial.loja)}
+            <div><div class="ln">${esc(oficial.loja)} ${SELO_OFICIAL}</div><div class="lt">Escolha a cor na página do produto</div></div>
+            <div></div><a class="btn btn-linha btn-sm" href="${esc(oficialDoProduto.url)}" target="_blank" rel="noopener">Ver produto</a></div>` : ""}
           </div>
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
@@ -343,9 +348,11 @@ addEventListener("popstate", () => { if ($("#modalProduto").classList.contains("
 async function abrirProduto(v) {
   abrirJanela(); tomFiltro = "";
   try {
-    const linhas = v.linhasBuscadas || await linhasDoGrupo(v.grupo);
+    const grupo = await linhasDoGrupo(v.grupo);
+    const cores = v.linhasBuscadas && new Set(v.linhasBuscadas.map(r => norm(r.cor)));
+    const linhas = cores ? grupo.filter(r => cores.has(norm(r.cor))) : grupo;
     if (!linhas.length) throw new Error("sem dados");
-    const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, cats: new Set([v.categoria]), linhas: linhas.map(r => ({...r, categoria: v.categoria})), tipo: "produto"};
+    const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, ofertasDoGrupo: grupo.filter(r => r.categoria === v.categoria), cats: new Set([v.categoria]), linhas: linhas.filter(r => r.categoria === v.categoria), tipo: "produto"};
     await abrirComparacao(g, v.categoria, v.corBuscada ? norm(v.corBuscada) : null);
   } catch (e) { ALVO.innerHTML = `<div class="painel"><div class="vazio">Não consegui abrir este produto agora.</div></div>`; }
 }

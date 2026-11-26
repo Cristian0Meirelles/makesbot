@@ -419,3 +419,22 @@ def test_navegador_le_produto_mac():
     assert {l["categoria"] for l in linhas} == {"Lip tint"} and linhas[0]["marca"] == "MAC" and linhas[0]["loja"] == "MAC Cosmetics"
     assert N.cor_do_nome("Powder Blush - Film Noir - 6g", "Powder Blush") == "Film Noir"
     assert N.categoria_da_url("https://x/products/13854/produtos/maquiagem/labios/batom") == "Batom"
+
+
+def test_mesma_ficha_preserva_links_por_loja_e_cor():
+    import datetime as dt
+    from bot.catalogo import linha_catalogo
+    from bot.util import Oferta
+
+    def linha(produto, cor, categoria, loja):
+        oferta = Oferta(loja, produto + " - " + cor, "https://loja.example/p", False,
+                        extra={"produto": produto, "marca": "MAC", "cor": cor})
+        return linha_catalogo(oferta, categoria, dt.datetime.now(dt.timezone.utc), "")
+
+    a = linha("Blush em Pó Skinfinish Colourstruck", "Film Noir Buff", "Blush", "MAC Cosmetics")
+    b = linha("Powder Blush", "Film Noir", "Blush", "Magalu")
+    c = linha("Batom Satin M·A·Cximal", "Film Noir", "Batom", "MAC Cosmetics")
+    d = linha("Satin Lipstick MAC MACximal", "Film Noir", "Batom", "Época Cosméticos")
+    assert (a["grupo"], a["cor"]) == (b["grupo"], b["cor"])
+    assert "Film Noir Buff" in a["titulo"]
+    assert c["grupo"] == d["grupo"] != a["grupo"]

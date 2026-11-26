@@ -124,8 +124,17 @@ def atualizar():
             headers={"Prefer": "resolution=ignore-duplicates,return=minimal"})
     linhas = [linha_catalogo(o, "Blush", agora, "") for o in ofertas]
     db.salvar_catalogo(linhas)
-    grupos = sorted({l["grupo"] for l in linhas + anteriores})
-    db.salvar_vitrine(montar_vitrine(db.catalogo_por_grupos(grupos), agora))
+    # Reclassifica também a última leitura quando a loja estiver fora do ar.
+    for antigo in anteriores:
+        if antigo["loja"] == "MAC Cosmetics" and antigo["cor"] == "Film Noir Buff":
+            db._req("PATCH", "catalogo", params={"loja": "eq.MAC Cosmetics", "url": "eq." + antigo["url"],
+                    "grupo": "eq." + antigo["grupo"]}, json={"grupo": "mac|blush powder", "cor": "Film Noir",
+                    "produto": "Powder Blush", "busca": antigo["busca"] + " powder blush"})
+    grupos = sorted({l["grupo"] for l in linhas + anteriores} | {"mac|blush powder"})
+    vitrine = montar_vitrine(db.catalogo_por_grupos(grupos), agora)
+    db.salvar_vitrine(vitrine)
+    for antigo in set(grupos) - {v["grupo"] for v in vitrine}:
+        db.apagar_vitrine(antigo)
     print(f"Film Noir Buff: {len(linhas)} oferta(s) verificadas e vitrine atualizada.")
     if not ofertas:
         raise RuntimeError("Vitrine publicada com a última leitura. Lojas sem confirmação nova.")

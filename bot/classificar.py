@@ -95,4 +95,11 @@ def chave_produto(marca: str | None, produto: str) -> str:
         if t in marca_t or t in _GENERICAS or _UNIDADE.match(t):
             continue
         ts.append(t)
-    return f"{normalizar(marca)}|{' '.join(sorted(set(ts)))}"
+    termos = set(ts)
+    # Varejistas frequentemente repetem o tipo em português e inglês.
+    for local, ingles in (("batom", "lipstick"), ("base", "foundation"), ("corretivo", "concealer"),
+                          ("iluminador", "highlighter"), ("delineador", "eyeliner")):
+        if ingles in termos:
+            termos.discard(ingles)
+            termos.add(local)
+    return f"{normalizar(marca)}|{' '.join(sorted(termos))}"

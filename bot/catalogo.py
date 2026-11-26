@@ -84,12 +84,23 @@ def linha_catalogo(o: Oferta, categoria: str, agora: dt.datetime, afiliado: str)
     cor = (o.extra.get("cor") or "").strip() or None
     if cor and re.fullmatch(r"(\d+([.,]\d+)?\s*(un|und|unid|unidades?|ml|g|gr|kg|oz)?|[uú]nic[oa]|padr[aã]o|u|default( title)?|sem cor)", cor, re.I):
         cor = None
+    nome_loja, cor_loja = produto, cor
+    # Preserva o título do anúncio e indexa também a grafia usada pela loja.
+    if normalizar(marca) in {"mac", "m a c", "mac cosmetics", "m a c cosmetics"}:
+        marca = "MAC"
+        produto = re.sub(r"m[.·]a[.·]c", "MAC", produto, flags=re.I)
+    if marca == "MAC" and categoria == "Blush":
+        if chave_produto(marca, produto) in {"mac|blush powder", "mac|blush colourstruck po skinfinish"}:
+            produto = "Powder Blush"
+            if normalizar(cor) == "film noir buff":
+                cor = "Film Noir"
+    aliases = f"{nome_loja} {cor_loja or ''}" if (nome_loja, cor_loja) != (produto, cor) else ""
     url_af = afiliado.replace("{url_enc}", url_codificada(o.url)).replace("{url}", o.url) if afiliado else None
     return {
         "loja": o.loja, "marca": marca, "produto": produto[:200], "cor": cor and cor[:120],
         "categoria": categoria, "titulo": o.titulo[:300], "url": o.url, "url_afiliado": url_af,
         "imagem": o.imagem, "preco": o.preco, "disponivel": o.disponivel,
-        "busca": normalizar(f"{marca or ''} {produto} {cor or ''} {categoria} {o.loja}")[:500],
+        "busca": normalizar(f"{marca or ''} {produto} {cor or ''} {categoria} {o.loja} {aliases}")[:500],
         "grupo": chave_produto(marca, produto),
         "familia": familia_cor(cor, o.titulo),
         "tom": tom_de_pele(cor, categoria),
