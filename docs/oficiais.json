@@ -1,0 +1,18 @@
+{
+  "_como_usar": "Site oficial de cada marca. 'loja' = nome da loja no catálogo quando já pegamos o preço de lá. 'busca' usa {q} para o nome do produto; sem 'busca', o link vai para a página inicial.",
+  "marcas": [
+    {"marca": "MAC", "apelidos": ["m a c", "mac cosmetics", "m a c cosmetics"], "site": "https://www.maccosmetics.com.br", "loja": "MAC Cosmetics"},
+    {"marca": "O Boticário", "apelidos": ["boticario", "o boticario", "make b", "make b."], "site": "https://www.boticario.com.br", "busca": "https://www.boticario.com.br/{q}?_q={q}&map=ft", "loja": "O Boticário"},
+    {"marca": "Quem Disse, Berenice?", "apelidos": ["quem disse berenice", "qdb"], "site": "https://www.quemdisseberenice.com.br", "busca": "https://www.quemdisseberenice.com.br/{q}?_q={q}&map=ft", "loja": "Quem Disse, Berenice?"},
+    {"marca": "Eudora", "apelidos": [], "site": "https://www.eudora.com.br", "busca": "https://www.eudora.com.br/{q}?_q={q}&map=ft", "loja": "Eudora"},
+    {"marca": "Natura", "apelidos": ["natura una", "una"], "site": "https://www.natura.com.br", "loja": "Natura"},
+    {"marca": "Vult", "apelidos": [], "site": "https://www.vult.com.br", "loja": "Vult"},
+    {"marca": "Lancôme", "apelidos": ["lancome"], "site": "https://www.lancome.com.br", "loja": "Lancôme"},
+    {"marca": "Clinique", "apelidos": [], "site": "https://www.clinique.com.br", "loja": "Clinique"},
+    {"marca": "Océane", "apelidos": ["oceane", "oceane edition"], "site": "https://www.oceane.com.br", "busca": "https://www.oceane.com.br/{q}?_q={q}&map=ft", "loja": "Océane"},
+    {"marca": "Mari Maria Makeup", "apelidos": ["mari maria"], "site": "https://www.marimariamakeup.com", "busca": "https://www.marimariamakeup.com/search?q={q}", "loja": "Mari Maria Makeup"},
+    {"marca": "Dailus", "apelidos": [], "site": "https://www.dailus.com.br", "busca": "https://www.dailus.com.br/search?q={q}", "loja": "Dailus"},
+    {"marca": "Catharine Hill", "apelidos": [], "site": "https://www.catharinehill.com.br", "busca": "https://www.catharinehill.com.br/{q}?_q={q}&map=ft", "loja": "Catharine Hill"},
+    {"marca": "Hinode", "apelidos": [], "site": "https://www.hinode.com.br", "busca": "https://www.hinode.com.br/{q}?_q={q}&map=ft", "loja": "Hinode"}
+  ]
+}

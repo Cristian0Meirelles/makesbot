@@ -27,7 +27,7 @@ html{scroll-behavior:smooth}
 body{margin:0;background:var(--creme);color:var(--tinta);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
 img{max-width:100%;display:block}
 a{color:inherit}
-button{font:inherit;cursor:pointer}
+button{font:inherit;cursor:pointer;color:inherit;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}
 input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
 .serif{font-family:var(--serif)}
@@ -116,6 +116,8 @@ input,select,textarea{font:inherit;color:inherit}
 .paginas button.on{background:var(--tinta);border-color:var(--tinta);color:#fff}
 .paginas button:disabled{opacity:.35;cursor:default}
 .paginas span{color:var(--suave);padding:0 4px}
+.selo-oficial{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:#efe6ff;color:#5b3fa3;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.linha-loja.oficial{border-style:dashed;background:#fbf8ff}
 .selo-melhor{display:inline-block;font-size:11px;font-weight:700;background:var(--verde);color:#fff;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
 .modal.grande .caixa{max-width:1120px;text-align:left;padding:0;background:transparent;max-height:92vh;overflow:auto;border-radius:32px}
 .modal.grande .painel{margin:0}
@@ -450,10 +452,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   .garantias{margin-top:14px;font-size:14px}
   form.f{padding:18px 14px;border-radius:20px}
   .campo input,.campo textarea{font-size:16px}
-  /* produto: janela de baixo pra cima */
-  .modal.grande{padding:0;align-items:end;place-items:end stretch}
-  .modal.grande .caixa{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:94vh}
-  .modal.grande .painel{border-radius:24px 24px 0 0;padding:18px 16px 24px}
+  /* produto: janela de baixo pra cima, sempre do tamanho da tela */
+  .modal.grande{padding:0;display:none;align-items:flex-end;justify-content:stretch;overscroll-behavior:contain}
+  .modal.grande.on{display:flex}
+  .modal.grande .caixa{max-width:none;width:100%;border-radius:24px 24px 0 0;max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--papel);padding-bottom:env(safe-area-inset-bottom)}
+  .modal.grande .painel{border-radius:24px 24px 0 0;padding:14px 16px 24px;border:0;box-shadow:none}
+  .modal.grande .fechar{position:sticky;top:10px;float:right;margin:10px 10px -50px 0;z-index:5;width:38px;height:38px}
+  .modal.grande .caixa::before{content:"";display:block;width:42px;height:5px;border-radius:9px;background:#dccbc7;margin:8px auto 0}
   .comparar{gap:16px}
   .comparar .foto-grande{max-width:230px;margin:0 auto}
   .comparar h2{font-size:25px}
@@ -461,7 +466,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   .cor{flex:none}
   .passos{font-size:12.5px;margin-bottom:12px;padding-right:40px}
   #produtoCorpo .passos{display:none}
-  .fechar{position:absolute;top:10px;right:10px;margin:0}
   .toast{bottom:88px}
   footer{padding:30px 0 30px}
   /* menu fixo embaixo */
@@ -889,6 +893,18 @@ async function linhasDoGrupo(grupo) {
   return api(`catalogo?select=${CAMPOS}&grupo=eq.${encodeURIComponent(grupo)}&order=disponivel.desc,preco.asc.nullslast&limit=1500`);
 }
 
+let OFICIAIS = null;
+async function carregarOficiais() {
+  if (OFICIAIS) return OFICIAIS;
+  try { OFICIAIS = (await (await fetch("oficiais.json", {cache: "no-cache"})).json()).marcas || []; } catch { OFICIAIS = []; }
+  return OFICIAIS;
+}
+function oficialDe(marca) {
+  const m = norm(marca);
+  if (!m || !OFICIAIS) return null;
+  return OFICIAIS.find(o => [o.marca, ...(o.apelidos || [])].some(a => norm(a) === m)) || null;
+}
+const SELO_OFICIAL = '<span class="selo-oficial">✓ Site oficial</span>';
 let tomFiltro = "";
 const corFalsa = c => !c || /^(\d+([.,]\d+)?\s*(un|und|unid|unidade|unidades|ml|g|gr|kg|oz)?|unic[oa]|padr[aã]o|u|default|default title|sem cor)$/i.test(String(c).trim());
 async function abrirComparacao(g, cat, corEscolhida) {
@@ -926,11 +942,40 @@ async function abrirComparacao(g, cat, corEscolhida) {
   const porLoja = new Map();
   for (const r of linhas) { const a = porLoja.get(r.loja); if (!a || (r.disponivel && !a.disponivel) || (r.disponivel === a.disponivel && (r.preco || 1e9) < (a.preco || 1e9))) porLoja.set(r.loja, r); }
   const lista = [...porLoja.values()].sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
-  const disp = lista.filter(r => r.disponivel), corNome = cores.get(corAtual)?.nome || "";
-  const melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
+  let disp = lista.filter(r => r.disponivel); const corNome = cores.get(corAtual)?.nome || "";
+  let melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
   const img = lista.find(r => r.imagem)?.imagem || cores.get(corAtual)?.img;
   const recente = lista.map(r => r.atualizado_em).sort().pop();
   const nomeProduto = g.nome || ref.produto;
+  await carregarOficiais();
+  const oficial = oficialDe(ref.marca);
+  const temOficialNaLista = oficial && lista.some(r => r.loja === oficial.loja);
+  let linkOficial = "";
+  // loja oficial já está no catálogo mas com outro nome de produto? procura lá e mostra o preço
+  const GENERICAS = new Set(["blush","batom","base","gloss","labial","liquido","liquida","po","compacto","em","de","da","do","bastao","stick","edition","matte","maquiagem","facial","cor","lip","tint","sombra","paleta","corretivo","iluminador","mascara","cilios","delineador","primer","fixador","pro","new","novo","nova"]);
+  if (oficial && oficial.loja && !temOficialNaLista && !DEMO) {
+    const marcaTs = new Set(toks(oficial.marca).concat(...(oficial.apelidos || []).map(toks)));
+    const chave = toks(nomeProduto).filter(t => !marcaTs.has(t) && !GENERICAS.has(t) && !/\d/.test(t)).sort((a, b) => b.length - a.length).slice(0, 3);
+    if (chave.length >= 2) {   // só com 2+ palavras próprias do produto, pra não confundir com outro
+      try {
+        const filtro = chave.map(t => `busca.ilike.*${t}*`).join(",");
+        const achados = await api(`catalogo?select=${CAMPOS}&loja=eq.${encodeURIComponent(oficial.loja)}&categoria=eq.${encodeURIComponent(cat)}&and=(${encodeURIComponent(filtro)})&order=disponivel.desc,preco.asc.nullslast&limit=40`);
+        const confere = achados.filter(r => chave.every(t => norm(r.produto).includes(t)));
+        const mesmoTom = confere.find(r => corAtual !== "_" && norm(r.cor) === corAtual);
+        if (mesmoTom) lista.push(mesmoTom);
+        else if (confere.length && corAtual === "_") lista.push(confere.find(r => r.disponivel) || confere[0]);
+      } catch (e) { console.warn(e); }
+    }
+  }
+  const temOficialAgora = oficial && lista.some(r => r.loja === oficial.loja);
+  lista.sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
+  disp = lista.filter(r => r.disponivel);
+  melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
+  if (oficial && !temOficialAgora) {
+    const marcaTs = new Set(toks(oficial.marca).concat(...(oficial.apelidos || []).map(toks)));
+    const q = toks(nomeProduto).filter(t => !marcaTs.has(t) && !/^\d+(ml|g)?$/.test(t)).slice(0, 5).join(" ");
+    linkOficial = oficial.busca && q ? oficial.busca.replaceAll("{q}", encodeURIComponent(q)) : oficial.site;
+  }
   const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
   alvo().innerHTML = `<div class="painel">
@@ -948,10 +993,16 @@ async function abrirComparacao(g, cat, corEscolhida) {
         <div class="lojas-lista">${lista.map(r => `
           <div class="linha-loja${r.disponivel ? " disp" : ""}">
             ${logoLoja(r.loja)}
-            <div style="min-width:0"><div class="ln">${esc(r.loja)}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${!r.cor && temCores ? "Várias cores · escolha a sua na loja" : esc(r.titulo)}</div></div>
+            <div style="min-width:0"><div class="ln">${esc(r.loja)}${oficial && r.loja === oficial.loja ? SELO_OFICIAL : ""}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${!r.cor && temCores ? "Várias cores · escolha a sua na loja" : esc(r.titulo)}</div></div>
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${r.disponivel ? `<a class="btn btn-esc btn-sm" href="${esc(urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">Comprar</a>` : `<a class="btn btn-linha btn-sm" href="${esc(urlSegura(r.url))}" target="_blank" rel="noopener">Ver</a>`}
-          </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}</div>
+          </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
+          ${linkOficial ? `<div class="linha-loja oficial">
+            <div class="logo-loja"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(new URL(oficial.site).host)}&sz=64" alt="" onerror="this.remove()"></div>
+            <div style="min-width:0"><div class="ln">${esc(oficial.marca)}${SELO_OFICIAL}</div><div class="lt">Veja preço e cores direto no site da marca</div></div>
+            <div class="preco" style="font-size:13px;font-weight:600;color:var(--suave)">no site<small>oficial</small></div>
+            <a class="btn btn-linha btn-sm" href="${esc(urlSegura(linkOficial))}" target="_blank" rel="noopener">Ver no site</a>
+          </div>` : ""}</div>
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
         </div>
@@ -966,11 +1017,23 @@ async function abrirComparacao(g, cat, corEscolhida) {
   if (corEscolhida === undefined && !ALVO) R.scrollIntoView({behavior: "smooth", block: "start"});
 }
 
+/* trava o fundo (funciona no iPhone também) */
+let rolagemSalva = null;
+function travarFundo() {
+  if (rolagemSalva !== null) return;
+  rolagemSalva = scrollY;
+  Object.assign(document.body.style, {position: "fixed", top: `-${rolagemSalva}px`, left: "0", right: "0", width: "100%", overflow: "hidden"});
+}
+function destravarFundo() {
+  if (rolagemSalva === null) return;
+  Object.assign(document.body.style, {position: "", top: "", left: "", right: "", width: "", overflow: ""});
+  scrollTo(0, rolagemSalva); rolagemSalva = null;
+}
 /* produto aberto a partir do catálogo: abre numa janela por cima */
 async function abrirProduto(v) {
   ALVO = $("#produtoCorpo"); tomFiltro = "";
   ALVO.innerHTML = `<div class="painel"><div class="esqueleto" style="min-height:420px"></div></div>`;
-  $("#modalProduto").classList.add("on"); document.body.style.overflow = "hidden";
+  $("#modalProduto").classList.add("on"); travarFundo(); $("#modalProduto .caixa").scrollTop = 0;
   try {
     const linhas = await linhasDoGrupo(v.grupo);
     if (!linhas.length) throw new Error("sem dados");
@@ -978,7 +1041,7 @@ async function abrirProduto(v) {
     await abrirComparacao(g, v.categoria, null);
   } catch (e) { ALVO.innerHTML = `<div class="painel"><div class="vazio">Não consegui abrir este produto agora.</div></div>`; }
 }
-function fecharProduto() { $("#modalProduto").classList.remove("on"); document.body.style.overflow = ""; ALVO = null; }
+function fecharProduto() { if (!$("#modalProduto").classList.contains("on")) return; $("#modalProduto").classList.remove("on"); destravarFundo(); ALVO = null; }
 $("#fecharProduto").onclick = fecharProduto;
 $("#modalProduto").onclick = e => { if (e.target.id === "modalProduto") fecharProduto(); };
 addEventListener("keydown", e => { if (e.key === "Escape") fecharProduto(); });
@@ -1103,7 +1166,7 @@ function cardVitrine(v, i) {
     <div class="corpo">
       <div class="m">${esc(v.marca || "")}</div><div class="n">${esc(v.nome)}</div>
       <div class="preco-linha"><b>${v.preco_min ? brl(v.preco_min) : "—"}</b><small>${v.disponivel ? "melhor preço" : "último preço"} · ${esc(v.loja_min || "")}</small></div>
-      <div class="info">${v.n_cores > 1 ? `${v.n_cores} cores · ` : ""}${v.n_lojas > 1 ? `${v.n_lojas} lojas` : "1 loja"}${nd && v.n_lojas > 1 ? ` · <span class="ok">tem em ${nd}</span>` : ""}</div>
+      <div class="info">${(() => { const o = oficialDe(v.marca); return o && (v.lojas || []).includes(o.loja) ? '<span style="color:#5b3fa3;font-weight:600">✓ site oficial</span> · ' : ""; })()}${v.n_cores > 1 ? `${v.n_cores} cores · ` : ""}${v.n_lojas > 1 ? `${v.n_lojas} lojas` : "1 loja"}${nd && v.n_lojas > 1 ? ` · <span class="ok">tem em ${nd}</span>` : ""}</div>
     </div></article>`;
 }
 
@@ -1141,6 +1204,7 @@ async function carregarCatalogo() {
 }
 
 async function iniciarCatalogo() {
+  await carregarOficiais();
   lerFiltrosDaUrl();
   $("#fBusca").value = F.busca; $("#fOrdem").value = F.ordem; $("#fDisp").checked = F.disp;
   try {
@@ -1148,8 +1212,8 @@ async function iniciarCatalogo() {
     $("#fMarca").innerHTML = `<option value="">Todas as marcas</option>` + marcas.map(m => `<option value="${esc(m.marca)}"${m.marca === F.marca ? " selected" : ""}>${esc(m.marca)}${m.total ? ` (${m.total})` : ""}</option>`).join("");
   } catch (e) { console.warn(e); }
   chipsCatalogo();
-  const side = $("#catSide"), fechar = () => { side.classList.remove("on"); document.body.style.overflow = ""; };
-  $("#abrirFiltros").onclick = () => { side.classList.add("on"); document.body.style.overflow = "hidden"; };
+  const side = $("#catSide"), fechar = () => { side.classList.remove("on"); destravarFundo(); };
+  $("#abrirFiltros").onclick = () => { side.classList.add("on"); travarFundo(); };
   $("#sideFechar").onclick = fechar; $("#sideVer").onclick = () => { fechar(); $("#catalogo").scrollIntoView({behavior: "smooth"}); };
   let t;
   $("#fBusca").oninput = e => { clearTimeout(t); t = setTimeout(() => { F.busca = e.target.value.trim(); F.pagina = 1; carregarCatalogo(); }, 300); };
