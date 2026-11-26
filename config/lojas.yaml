@@ -70,6 +70,7 @@ lojas:
     dominio: www.americanas.com.br
     tipo: vtex
     paginas: 4          # loja gigante: limita para não pegar coisa que não é maquiagem
+    exigir_categoria: [beleza, maquiagem, perfumaria]   # ignora roupa, papelaria etc.
     afiliado: ""
 
 # ---- Desligadas na busca automática ----

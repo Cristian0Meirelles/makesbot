@@ -208,3 +208,13 @@ def test_vitrine_junta_lojas():
                         mk("C", "MAC Strobe Dewy Blush Líquido", "Starlite", 100, False)], t)
     assert len(v) == 1 and v[0]["n_lojas"] == 3 and v[0]["preco_min"] == 130 and v[0]["loja_min"] == "B"
     assert v[0]["lojas_disponiveis"] == ["A", "B"] and v[0]["n_cores"] == 2
+
+
+def test_exigir_categoria(monkeypatch):
+    from bot import catalogo
+    roupa = Oferta("Americanas", "Sutiã Harmony BLUSH", "https://a/1", True, None, 50, extra={"produto": "Sutiã", "cor": "Blush", "categorias": "/Moda/Lingerie/"})
+    make = Oferta("Americanas", "Blush MAC", "https://a/2", True, None, 150, extra={"produto": "Blush MAC", "marca": "MAC", "categorias": "/Beleza e Perfumaria/Maquiagem/"})
+    monkeypatch.setattr(catalogo.L, "pagina_vtex", lambda *a, **k: [roupa, make])
+    linhas = catalogo.varrer_loja({"nome": "Americanas", "dominio": "x", "tipo": "vtex", "paginas": 1,
+                                   "exigir_categoria": ["beleza", "maquiagem"]}, dt.datetime.now(dt.timezone.utc))
+    assert [l["url"] for l in linhas] == ["https://a/2"]

@@ -48,7 +48,7 @@ MARCAS = ["MAC", "Fenty Beauty", "Dior", "Too Faced", "Benefit", "NARS", "Rare B
           "Makiê", "Nina Secrets", "Pausa Para Feminices", "Karen Bachini", "Jequiti", "Hinode", "Avon"]
 PAGINAS_POR_TERMO = 20     # até 20 x 50 = 1000 produtos por tipo/marca em cada loja VTEX
 PAGINAS_SHOPIFY = 8        # 8 x 250 produtos
-LIMPAR_APOS = dt.timedelta(days=4)
+LIMPAR_APOS = dt.timedelta(days=2)
 
 
 def categoria_de(o: Oferta, termo_cat: str | None) -> str:
@@ -61,6 +61,8 @@ def categoria_de(o: Oferta, termo_cat: str | None) -> str:
 
 def linha_catalogo(o: Oferta, categoria: str, agora: dt.datetime, afiliado: str) -> dict:
     marca = (o.extra.get("marca") or "").strip() or None
+    if marca and normalizar(marca) in ("nao disponivel", "generico", "generica", "sem marca", "outros", "outras marcas"):
+        marca = None
     produto = (o.extra.get("produto") or o.titulo).strip()
     cor = (o.extra.get("cor") or "").strip() or None
     url_af = afiliado.replace("{url_enc}", url_codificada(o.url)).replace("{url}", o.url) if afiliado else None
@@ -81,8 +83,12 @@ def varrer_loja(loja: dict, agora: dt.datetime) -> list[dict]:
     afiliado = loja.get("afiliado") or ""
     linhas: dict[str, dict] = {}
 
+    exigir = [normalizar(x) for x in loja.get("exigir_categoria") or []]
+
     def guardar(ofertas, termo_cat):
         for o in ofertas or []:
+            if exigir and not any(x in normalizar(o.extra.get("categorias")) for x in exigir):
+                continue  # loja de departamento: só a seção de beleza
             if o.url not in linhas:
                 linhas[o.url] = linha_catalogo(o, categoria_de(o, termo_cat), agora, afiliado)
 
