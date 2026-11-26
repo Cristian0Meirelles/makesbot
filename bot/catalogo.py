@@ -194,7 +194,7 @@ def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = No
         vit = montar_vitrine(todas, agora)
         salvar_vitrine(vit)
         if limpar_vitrine:
-            limpar_vitrine(agora - dt.timedelta(hours=1))
+            limpar_vitrine(agora - dt.timedelta(seconds=1))  # tudo que não veio nesta rodada sai
         log.info("Vitrine: %d produtos (juntando lojas e cores)", len(vit))
     log.info("Catálogo atualizado: %d itens", total)
     return total
