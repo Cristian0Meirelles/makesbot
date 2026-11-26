@@ -30,6 +30,8 @@ TERMOS = {
 }
 # palavras no nome/categoria da loja -> categoria (a ordem importa)
 PISTAS = [
+    ("contorno labial", "Lápis labial"), ("contorno de boca", "Lápis labial"), ("lapis de boca", "Lápis labial"),
+    ("lip pencil", "Lápis labial"), ("delineador labial", "Lápis labial"), ("lapis de contorno", "Lápis labial"),
     ("lip tint", "Lip tint"), ("tint", "Lip tint"), ("gloss", "Gloss"), ("lapis labial", "Lápis labial"),
     ("lip liner", "Lápis labial"), ("batom", "Batom"), ("lipstick", "Batom"), ("blush", "Blush"),
     ("iluminador", "Iluminador"), ("highlighter", "Iluminador"), ("bronzer", "Bronzer"), ("contorno", "Contorno"),

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="lomadee" content="2324685" />
 <title>Voltou! — Alerta de reposição de maquiagem</title>
 <meta name="description" content="Esgotou? A gente fica de olho. Receba no WhatsApp e no e-mail o link da loja no instante em que a sua maquiagem voltar ao estoque.">
@@ -218,7 +218,8 @@ nav .links a:hover{color:var(--tinta)}
 .grade-tipos{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
 .tipo{border:1.5px solid var(--linha);background:var(--creme);border-radius:20px;padding:16px;text-align:left;transition:.2s}
 .tipo:hover{border-color:var(--rosa);transform:translateY(-2px)}
-.tipo .ilu{height:90px;display:grid;place-items:center;margin-bottom:10px}
+.tipo .ilu{height:90px;display:grid;place-items:center;margin-bottom:10px;overflow:hidden}
+.tipo .ilu img{max-height:90px;max-width:100%;width:auto;height:auto;object-fit:contain}
 .tipo b{display:block;font-size:17px}
 .tipo span{font-size:13px;color:var(--suave)}
 .comparar{display:grid;grid-template-columns:340px 1fr;gap:34px}
@@ -442,6 +443,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   .p3 p{font-size:14px}
   /* lojas: 2 colunas */
   .lojas-grade{grid-template-columns:1fr 1fr;gap:8px}
+  .grade-tipos{grid-template-columns:1fr 1fr;gap:10px}
+  .tipo{padding:12px}
+  .tipos h3{font-size:24px;padding-right:44px}
   .loja-chip{padding:9px 10px;gap:8px}
   .loja-chip .logo-loja{width:32px;height:32px;border-radius:9px}
   .loja-chip b{font-size:13px;line-height:1.2}
@@ -469,7 +473,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   .toast{bottom:88px}
   footer{padding:30px 0 30px}
   /* menu fixo embaixo */
-  .nav-baixo{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,253,252,.97);backdrop-filter:blur(12px);border-top:1px solid var(--linha);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .nav-baixo{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fffdfc;border-top:1px solid var(--linha);padding:6px 4px calc(6px + env(safe-area-inset-bottom));transform:translate3d(0,0,0);will-change:transform;transition:transform .25s ease;box-shadow:0 -6px 20px -12px rgba(60,20,30,.25)}
+  nav.topo .wrap>.btn{display:none}
+  nav.topo .wrap{justify-content:center}
+  .nav-baixo.escondida{transform:translate3d(0,110%,0)}
+  nav.topo{backdrop-filter:none;background:#fbf5f2;transform:translate3d(0,0,0)}
   .nav-baixo a{display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;font-size:11.5px;font-weight:600;color:var(--suave);padding:6px 0;border-radius:12px}
   .nav-baixo a svg{width:22px;height:22px}
   .nav-baixo a.on{color:var(--tinta)}
@@ -871,21 +879,19 @@ const alvo = () => ALVO || R;
 const CAMPOS = "loja,marca,produto,cor,categoria,titulo,url,url_afiliado,imagem,preco,disponivel,grupo,familia,tom,atualizado_em";
 
 function escolher(g) {
-  ALVO = null;
-  escolhido = g; q.value = g.rotulo; sug.classList.remove("on"); atualizarFantasma("");
+  escolhido = g; q.value = g.rotulo; q.blur(); sug.classList.remove("on"); atualizarFantasma("");
+  abrirJanela(); tomFiltro = "";
   const cats = [...g.cats];
   if (cats.length === 1) return abrirComparacao(g, cats[0]);
-  R.innerHTML = `<div class="painel tipos">
-    <div class="passos"><b>${esc(g.rotulo)}</b><span class="sep">›</span><span>Escolha o tipo</span></div>
+  ALVO.innerHTML = `<div class="painel tipos">
     <h3>"${esc(g.rotulo)}" existe em ${cats.length} tipos</h3><p>Qual deles você procura?</p>
     <div class="grade-tipos">${cats.map(c => {
       const ls = g.linhas.filter(r => (r.categoria || "Outro") === c), disp = ls.some(r => r.disponivel);
       const img = ls.find(r => r.imagem)?.imagem;
       return `<button class="tipo" data-c="${esc(c)}"><div class="ilu">${fotoOu(img, c, "", 86)}</div>
-        <b>${esc(c)}</b><span>${new Set(ls.map(r => r.loja)).size} lojas · ${disp ? "tem em estoque" : "esgotado"}</span></button>`; }).join("")}
+        <b>${esc(c)}</b><span>${(n => n + (n > 1 ? " lojas" : " loja"))(new Set(ls.map(r => r.loja)).size)} · ${disp ? "tem em estoque" : "esgotado"}</span></button>`; }).join("")}
     </div></div>`;
-  $$(".tipo").forEach(b => b.onclick = () => abrirComparacao(g, b.dataset.c));
-  R.scrollIntoView({behavior: "smooth", block: "start"});
+  ALVO.querySelectorAll(".tipo").forEach(b => b.onclick = () => abrirComparacao(g, b.dataset.c));
 }
 
 async function linhasDoGrupo(grupo) {
@@ -1029,11 +1035,21 @@ function destravarFundo() {
   Object.assign(document.body.style, {position: "", top: "", left: "", right: "", width: "", overflow: ""});
   scrollTo(0, rolagemSalva); rolagemSalva = null;
 }
-/* produto aberto a partir do catálogo: abre numa janela por cima */
-async function abrirProduto(v) {
-  ALVO = $("#produtoCorpo"); tomFiltro = "";
+/* janela do produto (catálogo, busca e radar usam a mesma) */
+function abrirJanela() {
+  ALVO = $("#produtoCorpo");
   ALVO.innerHTML = `<div class="painel"><div class="esqueleto" style="min-height:420px"></div></div>`;
-  $("#modalProduto").classList.add("on"); travarFundo(); $("#modalProduto .caixa").scrollTop = 0;
+  const m = $("#modalProduto");
+  if (!m.classList.contains("on")) {
+    m.classList.add("on"); travarFundo();
+    try { history.pushState({janela: 1}, "", location.href); } catch {}
+  }
+  $("#modalProduto .caixa").scrollTop = 0;
+}
+try { history.scrollRestoration = "manual"; } catch {}
+addEventListener("popstate", () => { if ($("#modalProduto").classList.contains("on")) fecharProduto(true); });
+async function abrirProduto(v) {
+  abrirJanela(); tomFiltro = "";
   try {
     const linhas = await linhasDoGrupo(v.grupo);
     if (!linhas.length) throw new Error("sem dados");
@@ -1041,8 +1057,12 @@ async function abrirProduto(v) {
     await abrirComparacao(g, v.categoria, null);
   } catch (e) { ALVO.innerHTML = `<div class="painel"><div class="vazio">Não consegui abrir este produto agora.</div></div>`; }
 }
-function fecharProduto() { if (!$("#modalProduto").classList.contains("on")) return; $("#modalProduto").classList.remove("on"); destravarFundo(); ALVO = null; }
-$("#fecharProduto").onclick = fecharProduto;
+function fecharProduto(peloVoltar) {
+  if (!$("#modalProduto").classList.contains("on")) return;
+  $("#modalProduto").classList.remove("on"); destravarFundo(); ALVO = null;
+  if (!peloVoltar && history.state && history.state.janela) { try { history.back(); } catch {} }
+}
+$("#fecharProduto").onclick = () => fecharProduto();
 $("#modalProduto").onclick = e => { if (e.target.id === "modalProduto") fecharProduto(); };
 addEventListener("keydown", e => { if (e.key === "Escape") fecharProduto(); });
 
@@ -1410,7 +1430,19 @@ async function iniciar() {
     $("#grade").innerHTML = `<div class="vazio">Não consegui carregar agora (${esc(e.message)}). Confira o <code>config.js</code> e se o SQL foi executado no Supabase.</div>`;
   }
 }
-if (matchMedia("(max-width:700px)").matches) { $("#q").placeholder = "Buscar make, cor ou marca"; $("#fBusca").placeholder = "Buscar no catálogo"; }
+if (matchMedia("(max-width:700px)").matches) { $("#q").placeholder = "Buscar make ou marca"; $("#fBusca").placeholder = "Buscar no catálogo"; }
+try {   // menu de baixo: some ao rolar pra baixo, volta ao rolar pra cima
+  const nb = $(".nav-baixo"); let ultimoY = scrollY, tic = false;
+  addEventListener("scroll", () => {
+    if (tic) return; tic = true;
+    requestAnimationFrame(() => {
+      const y = scrollY, d = y - ultimoY;
+      if (Math.abs(d) > 6) { nb.classList.toggle("escondida", d > 0 && y > 120); ultimoY = y; }
+      if (innerHeight + y >= document.body.scrollHeight - 40) nb.classList.remove("escondida");
+      tic = false;
+    });
+  }, {passive: true});
+} catch {}
 try {
   const links = $$(".nav-baixo a"), secs = links.map(a => document.getElementById(a.dataset.s)).filter(Boolean);
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.dataset.s === e.target.id)); }), {rootMargin: "-45% 0px -50% 0px"});

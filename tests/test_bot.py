@@ -302,3 +302,10 @@ def test_cor_falsa_vira_nada():
         assert l["cor"] is None, c
     l = linha_catalogo(Oferta("L", "x", "u", True, extra={"marca": "MAC", "produto": "Batom", "cor": "Ruby Woo"}), "Batom", t, "")
     assert l["cor"] == "Ruby Woo"
+
+
+def test_lapis_de_boca_nao_e_contorno():
+    from bot.catalogo import categoria_de
+    for nome in ["Lápis de Contorno Labial MAC Ruby Woo", "Lip Pencil MAC Ruby Woo", "Delineador Labial Vult"]:
+        assert categoria_de(Oferta("L", "x", "u", True, extra={"produto": nome, "categorias": ""}), None) == "Lápis labial", nome
+    assert categoria_de(Oferta("L", "x", "u", True, extra={"produto": "Paleta de Contorno Facial", "categorias": ""}), None) == "Contorno"
