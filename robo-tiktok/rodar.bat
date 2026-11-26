@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title Voltou! - Robo do TikTok Shop
+title Voltou! - Robo do TikTok Shop e lojas
 cd /d "%~dp0.."
 
 if not exist "robo-tiktok\.env" (
@@ -27,7 +27,15 @@ echo   TikTok, resolva que o robo continua sozinho.
 echo  ==========================================================
 echo.
 
-%PY% -m bot.main tiktok_catalogo --chrome %*
+echo  [1/2] TikTok Shop (todas as lojas de maquiagem)
+%PY% -m bot.main tiktok_catalogo --chrome --sem-abrir-site
+
+echo.
+echo  [2/2] Lojas pelo navegador (MAC Cosmetics e outras do config)
+%PY% -m bot.main navegador --chrome
+
+if not defined SITE_URL set "SITE_URL=https://voltou-lilac.vercel.app"
+start "" "%SITE_URL%/#catalogo"
 
 echo.
 echo  Terminou. Esta janela fecha em 30 segundos.

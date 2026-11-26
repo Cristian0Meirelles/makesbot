@@ -277,3 +277,36 @@ tiktok_catalogo:
     makeup-fixing-spray/601552: Fixador
     makeup-sets/601529:
     makeup/848648:
+
+# =====================================================================
+#  Lojas lidas pelo navegador (robô do PC, abre o Google Chrome)
+# ---------------------------------------------------------------------
+#  Para lojas que bloqueiam o bot do GitHub. O robô entra no site como
+#  uma pessoa, passa pelas categorias de maquiagem, abre cada produto e lê
+#  nome, cor, preço, foto, estoque e link. Só lê: não compra, não clica em
+#  nada além de "carregar mais", não faz login.
+#  Roda junto com robo-tiktok\rodar.bat (09h e 21h).
+#
+#  nome / marca / dominio
+#  inicio            página por onde começa
+#  categorias        páginas de categoria (além das que ele achar sozinho)
+#  padrao_categoria  regex do link de categoria de maquiagem
+#  padrao_produto    regex do link de produto
+#  max_produtos      limite por rodada
+#  minimo_ofertas    abaixo disso manda aviso pro ADMIN_EMAIL
+# =====================================================================
+lojas_navegador:
+  esperar_verificacao_min: 10
+  lojas:
+    - nome: MAC Cosmetics
+      marca: MAC
+      dominio: www.maccosmetics.com.br
+      inicio: https://www.maccosmetics.com.br/products/13831/produtos/maquiagem/labios
+      categorias:
+        - https://www.maccosmetics.com.br/products/13831/produtos/maquiagem/labios
+        - https://www.maccosmetics.com.br/products/13830/produtos/maquiagem/rosto
+      padrao_categoria: '/products/\d+/produtos/maquiagem/'
+      padrao_produto: '/product/\d+/\d+/'
+      max_produtos: 800
+      minimo_ofertas: 100
+      pausa_seg: [1.5, 3.5]

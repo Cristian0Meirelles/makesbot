@@ -4,6 +4,7 @@ Uso:
   python -m bot.main tiktok            # só links do TikTok Shop — roda 2x por dia
   python -m bot.main tiktok_catalogo   # catálogo de maquiagem de todas as lojas do TikTok Shop — 2x por dia
   python -m bot.main tiktok_catalogo --chrome   # o mesmo, abrindo o Google Chrome do seu PC (robo-tiktok/)
+  python -m bot.main navegador --chrome   # lojas que bloqueiam o GitHub (ex.: MAC), lidas pelo Chrome do PC
   python -m bot.main saude             # relatório diário por e-mail: robôs, buscas sem resultado, pedidos sem loja
   python -m bot.main feeds             # feeds oficiais de afiliados (Awin) — 1x por hora
   python -m bot.main catalogo          # atualiza o catálogo do autocompletar — 1x por dia
@@ -91,9 +92,10 @@ def testar(cfg: dict, args) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "tiktok_catalogo", "saude", "testar"], nargs="?", default="rapido")
+    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "tiktok_catalogo", "navegador", "saude", "testar"], nargs="?", default="rapido")
     ap.add_argument("--seco", action="store_true")
     ap.add_argument("--chrome", action="store_true", help="usa o Google Chrome do PC, com janela (tiktok_catalogo)")
+    ap.add_argument("--loja", help="navegador: só esta loja (ex.: \"MAC Cosmetics\")")
     ap.add_argument("--sem-abrir-site", action="store_true", help="não abre o site no final (tiktok_catalogo --chrome)")
     ap.add_argument("--email")
     ap.add_argument("--whatsapp")
@@ -153,6 +155,12 @@ def main(argv=None) -> int:
         saude.rodar(db)
         return 0  # o aviso já foi por e-mail; não marca a Action como falha
 
+    if args.modo == "navegador":
+        from . import lojas_navegador as N
+        n = N.atualizar(db, cfg, chrome=args.chrome or True, so_loja=args.loja)
+        print(f"\n✅ {n} ofertas lidas pelo navegador.")
+        return 0
+
     if args.modo == "tiktok_catalogo":
         from . import tiktok_catalogo as T
         if args.seco:
@@ -177,7 +185,9 @@ def main(argv=None) -> int:
         else:
             atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo, salvar_vitrine=db.salvar_vitrine,
                                limpar_vitrine=db.limpar_vitrine,
-                               extras_vitrine=lambda: db.catalogo_completo_da_loja("TikTok Shop"))
+                               extras_vitrine=lambda: [r for nome in ["TikTok Shop"] + [
+                                   l["nome"] for l in (cfg.get("lojas_navegador") or {}).get("lojas") or []]
+                                   for r in db.catalogo_completo_da_loja(nome)])
         return 0
 
     motor = Motor(db, cfg, Notificador(seco=args.seco))

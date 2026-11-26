@@ -380,3 +380,27 @@ def test_relatorio_saude():
     assert prob and "problema" in assunto
     assert "TikTok Shop sem atualizar" in texto and "Hinode" in texto
     assert "blush film noir" in texto and "MAC Powder Blush Film Noir" in texto and "15.012 produtos" in texto
+
+
+# ---------------------------------------------------------------- lojas pelo navegador (MAC)
+MAC_HTML = """<html><head><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":["FAQPage"]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ProductGroup","name":"Lip Tint Lustreglass Stainglass",
+"image":"https://img/grupo.jpg","brand":{"name":"MAC Brazil E-Commerce Site"},"hasVariant":[
+{"@type":"Product","name":"Lip Tint Lustreglass Stainglass - XOXO - 3ml","color":"Nude pêssego quente","image":["https://img/xoxo.jpg"],
+ "offers":{"@type":"Offer","price":127,"priceCurrency":"BRL","availability":"http://schema.org/OutOfStock","url":"/product/13831/147440/x?shade=XOXO"}},
+{"@type":"Product","name":"Lip Tint Lustreglass Stainglass - Zoomies - 3ml","color":"Vermelho cereja",
+ "offers":{"@type":"Offer","price":"127.00","availability":"http://schema.org/InStock","url":"https://www.maccosmetics.com.br/product/13831/147440/x?shade=Zoomies"}}]}</script></head></html>"""
+
+
+def test_navegador_le_produto_mac():
+    from bot import lojas_navegador as N
+    url = "https://www.maccosmetics.com.br/product/13831/147440/produtos/maquiagem/labios/lip-tint"
+    ofs = N.ler_produto("MAC Cosmetics", "MAC", url, MAC_HTML)
+    assert [o.extra["cor"] for o in ofs] == ["XOXO", "Zoomies"]
+    assert [o.disponivel for o in ofs] == [False, True] and ofs[1].preco == 127.0
+    assert ofs[0].url == "https://www.maccosmetics.com.br/product/13831/147440/x?shade=XOXO"
+    assert ofs[0].imagem == "https://img/xoxo.jpg" and ofs[1].imagem == "https://img/grupo.jpg"
+    linhas = N.montar_linhas([(o, N.categoria_da_url(url)) for o in ofs], dt.datetime(2026, 11, 26, tzinfo=dt.timezone.utc))
+    assert {l["categoria"] for l in linhas} == {"Lip tint"} and linhas[0]["marca"] == "MAC" and linhas[0]["loja"] == "MAC Cosmetics"
+    assert N.cor_do_nome("Powder Blush - Film Noir - 6g", "Powder Blush") == "Film Noir"
+    assert N.categoria_da_url("https://x/products/13854/produtos/maquiagem/labios/batom") == "Batom"
