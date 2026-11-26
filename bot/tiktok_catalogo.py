@@ -64,6 +64,11 @@ class Bloqueado(Exception):
     """O TikTok mostrou a verificação de segurança (CAPTCHA)."""
 
 
+# No modo Chrome (no seu PC), quando aparece a verificação o robô espera você
+# resolver na janela em vez de desistir. 0 = desiste na hora (GitHub).
+ESPERA_CAPTCHA_SEG = 0
+
+
 # ---------------------------------------------------------------------------
 # Partes "puras" (sem navegador) — testadas em tests/test_bot.py
 # ---------------------------------------------------------------------------
@@ -153,16 +158,35 @@ _JS_CARDS = """() => [...document.querySelectorAll('a[href*="/pdp/"]')].map(a =>
 })"""
 
 
-def _checar_bloqueio(page):
-    titulo = (page.title() or "").lower()
-    if "security check" in titulo:
-        raise Bloqueado(page.url)
+def _tem_verificacao(page) -> bool:
     try:
+        if "security check" in (page.title() or "").lower():
+            return True
         corpo = page.inner_text("body", timeout=3000)[:2000].lower()
     except Exception:  # noqa: BLE001
+        return False
+    return "verify to continue" in corpo or "drag the puzzle" in corpo
+
+
+def _checar_bloqueio(page):
+    if not _tem_verificacao(page):
         return
-    if "verify to continue" in corpo or "drag the puzzle" in corpo:
+    if ESPERA_CAPTCHA_SEG <= 0:
         raise Bloqueado(page.url)
+    log.warning("O TikTok pediu verificação. Resolva o quebra-cabeça na janela do Chrome "
+                "(espero até %d min)...", ESPERA_CAPTCHA_SEG // 60)
+    try:
+        page.bring_to_front()
+    except Exception:  # noqa: BLE001
+        pass
+    fim = time.time() + ESPERA_CAPTCHA_SEG
+    while time.time() < fim:
+        time.sleep(4)
+        if not _tem_verificacao(page):
+            log.info("Verificação resolvida, continuando.")
+            time.sleep(2)
+            return
+    raise Bloqueado(page.url)
 
 
 def _abrir(page, url):
@@ -196,8 +220,27 @@ def _cards_da_categoria(page, url, cliques: int, espera: float) -> list[dict]:
     return page.evaluate(_JS_CARDS)
 
 
-def coletar(cfg: dict, agora: dt.datetime | None = None) -> tuple[list[dict], bool]:
+def _abrir_navegador(pw, chrome: bool):
+    """chrome=True: abre o Google Chrome instalado no PC, com janela, num perfil só do robô
+    (fica salvo, então a verificação do TikTok aparece bem menos). False: Chromium invisível (GitHub)."""
+    if chrome:
+        import os
+        perfil = os.path.join(os.path.expanduser("~"), ".voltou-robo-chrome")
+        ctx = pw.chromium.launch_persistent_context(
+            perfil, channel="chrome", headless=False, locale="pt-BR", timezone_id="America/Sao_Paulo",
+            viewport=None, args=["--start-maximized", "--disable-blink-features=AutomationControlled"])
+        return ctx, ctx
+    browser = pw.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+    ctx = browser.new_context(
+        locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1440, "height": 900},
+        user_agent=("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"))
+    return browser, ctx
+
+
+def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -> tuple[list[dict], bool]:
     """Devolve (linhas do catálogo, completo?). completo=False se o TikTok bloqueou no meio."""
+    global ESPERA_CAPTCHA_SEG
     from playwright.sync_api import sync_playwright  # só o workflow do TikTok instala
 
     agora = agora or dt.datetime.now(dt.timezone.utc)
@@ -207,16 +250,13 @@ def coletar(cfg: dict, agora: dt.datetime | None = None) -> tuple[list[dict], bo
     espera = float(conf.get("espera_entre_cliques_seg", 2.0))
     detalhar = int(conf.get("detalhar_max", 40))
     marcas = _lista_marcas(conf.get("marcas_extra"))
+    ESPERA_CAPTCHA_SEG = int(conf.get("esperar_verificacao_min", 10)) * 60 if chrome else 0
 
     ofertas: dict[str, tuple[Oferta, str | None]] = {}
     completo = True
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
-        ctx = browser.new_context(
-            locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1440, "height": 900},
-            user_agent=("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                        "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"))
-        page = ctx.new_page()
+        browser, ctx = _abrir_navegador(pw, chrome)
+        page = ctx.pages[0] if chrome and ctx.pages else ctx.new_page()
         try:
             for slug, cat in categorias.items():
                 try:
@@ -262,12 +302,12 @@ def coletar(cfg: dict, agora: dt.datetime | None = None) -> tuple[list[dict], bo
     return linhas, completo
 
 
-def atualizar(db, cfg: dict, agora: dt.datetime | None = None) -> int:
+def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -> int:
     """Salva o catálogo do TikTok no banco e refaz a vitrine dos produtos afetados."""
     from .catalogo import montar_vitrine
 
     agora = agora or dt.datetime.now(dt.timezone.utc)
-    linhas, completo = coletar(cfg, agora)
+    linhas, completo = coletar(cfg, agora, chrome=chrome)
     if not linhas:
         log.warning("TikTok: nada coletado; o catálogo anterior fica como está")
         db.salvar_lojas([{"nome": LOJA, "dominio": "shop.tiktok.com", "tipo": "catálogo + links",

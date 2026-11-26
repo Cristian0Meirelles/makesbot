@@ -3,6 +3,7 @@ Uso:
   python -m bot.main rapido            # todas as lojas + links (menos TikTok) — roda a cada 5 min
   python -m bot.main tiktok            # só links do TikTok Shop — roda 2x por dia
   python -m bot.main tiktok_catalogo   # catálogo de maquiagem de todas as lojas do TikTok Shop — 2x por dia
+  python -m bot.main tiktok_catalogo --chrome   # o mesmo, abrindo o Google Chrome do seu PC (robo-tiktok/)
   python -m bot.main feeds             # feeds oficiais de afiliados (Awin) — 1x por hora
   python -m bot.main catalogo          # atualiza o catálogo do autocompletar — 1x por dia
   python -m bot.main testar            # mostra quais lojas estão respondendo
@@ -91,6 +92,8 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "tiktok_catalogo", "testar"], nargs="?", default="rapido")
     ap.add_argument("--seco", action="store_true")
+    ap.add_argument("--chrome", action="store_true", help="usa o Google Chrome do PC, com janela (tiktok_catalogo)")
+    ap.add_argument("--sem-abrir-site", action="store_true", help="não abre o site no final (tiktok_catalogo --chrome)")
     ap.add_argument("--email")
     ap.add_argument("--whatsapp")
     ap.add_argument("--callmebot")
@@ -147,13 +150,18 @@ def main(argv=None) -> int:
     if args.modo == "tiktok_catalogo":
         from . import tiktok_catalogo as T
         if args.seco:
-            linhas, completo = T.coletar(cfg)
+            linhas, completo = T.coletar(cfg, chrome=args.chrome)
             print(f"{len(linhas)} produtos ({'completo' if completo else 'parcial: TikTok bloqueou'})")
             for l in linhas[:30]:
                 print(f"  {'✅' if l['disponivel'] else '❌'} {l['categoria']:<18} {str(l['marca'] or '-'):<18} "
                       f"{l['preco'] or '':>8}  {l['produto'][:70]}")
         else:
-            T.atualizar(db, cfg)
+            n = T.atualizar(db, cfg, chrome=args.chrome)
+            if args.chrome and not args.sem_abrir_site:
+                import webbrowser
+                site = os.getenv("SITE_URL") or "https://voltou-lilac.vercel.app"
+                print(f"\n✅ {n} produtos do TikTok Shop atualizados. Abrindo o site: {site}")
+                webbrowser.open(site.rstrip("/") + "/#catalogo")
         return 0
 
     if args.modo == "catalogo":

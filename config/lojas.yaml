@@ -257,6 +257,7 @@ tiktok_catalogo:
   max_cliques_ver_mais: 15
   espera_entre_cliques_seg: 2.0
   detalhar_max: 40          # produtos sem marca reconhecida que ele abre pra ler a marca
+  esperar_verificacao_min: 10   # no robô do PC: quanto tempo espera você resolver o quebra-cabeça do TikTok
   marcas_extra: []          # marcas que ele ainda não reconhece pelo nome, ex.: [Minha Marca]
   categorias:
     lipstick-lip-gloss/601534: Batom
