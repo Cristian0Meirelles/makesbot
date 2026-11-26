@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .catalogo import linha_catalogo, montar_vitrine
 from .db import SupabaseDB
-from .lojas import verificar_link, _pagina_cadastrada, _LDJSON, ofertas_de_pagina
+from .lojas import verificar_link, _pagina_cadastrada, _LDJSON, ofertas_de_pagina, ofertas_vtex
 from .util import normalizar
 
 
@@ -41,8 +41,64 @@ def blush_de_anuncio(loja, url, produto, cor):
     return []
 
 
+def epoca():
+    dominio = "www.epocacosmeticos.com.br"
+    slug = "powder-blush-m-a-cblush-em-po/p"
+    _, dados = _pagina_cadastrada("https://" + dominio + "/api/catalog_system/pub/products/search/" + slug)
+    saida = []
+    for produto in json.loads(dados):
+        if normalizar(produto.get("brand")) != "mac":
+            continue
+        for item in produto.get("items", []):
+            if item.get("itemId") != "40032" or normalizar(item.get("name")) != "film noir":
+                continue
+            vendedores = [v for v in item.get("sellers", []) if v.get("sellerName") == "Época Cosméticos"
+                          and isinstance(v.get("commertialOffer", {}).get("IsAvailable"), bool)]
+            if vendedores:
+                for o in ofertas_vtex("Época Cosméticos", dominio, [dict(produto, items=[dict(item, sellers=vendedores)])]):
+                    o.extra.update(produto="Powder Blush", marca="MAC", cor="Film Noir")
+                    o.url = "https://" + dominio + "/" + slug + "?skuId=40032"
+                    saida.append(o)
+    return saida
+
+
+PAGINAS = {
+    "Beleza na Web": "https://www.belezanaweb.com.br/produto/mac-powder-film-noir-blush-matte-6g",
+    "Zattini": "https://www.zattini.com.br/p/powder-blush-mac-blush-em-po-film-noir-incolor-M96-0424-460",
+}
+
+
+def powder_blush(loja):
+    final, html = _pagina_cadastrada(PAGINAS[loja])
+    for bruto in _LDJSON.findall(html):
+        try:
+            dado = json.loads(bruto)
+        except ValueError:
+            continue
+        nos = dado if isinstance(dado, list) else dado.get("@graph", [dado])
+        for no in nos:
+            for item in no.get("hasVariant", [no]):
+                if item.get("@type") != "Product":
+                    continue
+                nome = normalizar(item.get("name")).replace("m a c", "mac")
+                oferta = item.get("offers")
+                if not isinstance(oferta, dict) or oferta.get("seller", {}).get("name") != loja:
+                    continue
+                if not all(p in nome.split() for p in ("mac", "powder", "blush")) or "film noir" not in nome:
+                    continue
+                if item.get("url", final).rstrip("/") != final.rstrip("/"):
+                    continue
+                saida = ofertas_de_pagina(loja, final, '<script type="application/ld+json">' + json.dumps(item) + '</script>')
+                for o in saida:
+                    o.extra.update(produto="Powder Blush", marca="MAC", cor="Film Noir")
+                return saida
+    return []
+
+
 def atualizar():
     fontes = [
+        ("Época Cosméticos", epoca),
+        *((loja, lambda loja=loja: powder_blush(loja)) for loja in PAGINAS),
         ("MAC Cosmetics", film_noir),
         ("Magalu", lambda: blush_de_anuncio("Magalu",
             "https://www.magazineluiza.com.br/powder-blush-mac-blush-em-po/p/ae3800ea1h/pf/pfbm/",

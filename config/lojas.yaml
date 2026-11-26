@@ -254,6 +254,7 @@ afiliados_por_dominio:
 #  categoria: categoria do site (vazio = descobre pelo nome do produto)
 # =====================================================================
 hosts_links:
+  - www.zattini.com.br
   - www.mercadolivre.com.br
   - mercadolivre.com.br
   - produto.mercadolivre.com.br

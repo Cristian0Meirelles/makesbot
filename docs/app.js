@@ -107,33 +107,52 @@ function correspondeNaDemo(v, palavras) {
   const texto = norm(v.busca).split(" ");
   return palavras.every((p, i) => texto.some(t => permitePrefixo(palavras, i) ? t.startsWith(p) : t === p));
 }
-async function aplicarCorBuscada(itens, palavras) {
-  return Promise.all(itens.map(async item => {
-    const gerais = toks([item.nome, item.marca, item.categoria, ...(item.lojas || [])].join(" "));
-    const tom = palavras.filter((p, i) => !gerais.some(t => permitePrefixo(palavras, i) ? t.startsWith(p) : t === p));
-    if (!tom.length) return item;
-    const linhas = await linhasDoGrupo(item.grupo);
-    const candidatas = linhas.filter(r => r.cor && correspondeNaDemo({busca: r.cor}, tom));
-    if (!candidatas.length) return item;
-    const exata = candidatas.find(r => norm(r.cor) === tom.join(" ")) || candidatas[0];
-    const mesmaCor = candidatas.filter(r => norm(r.cor) === norm(exata.cor));
-    const [variante] = agregarDemo(mesmaCor);
-    return {...item, ...variante, nome: item.nome, corBuscada: exata.cor};
-  }));
+async function pesquisarOfertas(palavras, filtros, signal, previa = false) {
+  const aceita = r => (!filtros.tipo || r.categoria === filtros.tipo) && (!filtros.marca || r.marca === filtros.marca)
+    && (!filtros.disp || r.disponivel) && (!filtros.lojas?.length || filtros.lojas.includes(r.loja))
+    && (!filtros.tons?.length || filtros.tons.includes(r.tom)) && (!filtros.cores?.length || filtros.cores.includes(r.familia));
+  let linhas = [];
+  if (DEMO) {
+    await carregarDemo();
+    linhas = demoCatalogo().filter(r => aceita(r) && correspondeNaDemo(r, palavras));
+  } else {
+    const p = new URLSearchParams({select: CAMPOS, and: "(" + filtroDeBusca(palavras) + ")",
+      categoria: "neq.Outro", order: "grupo.asc,id.asc", limit: previa ? "100" : "1000"});
+    if (filtros.tipo) p.set("categoria", "eq." + filtros.tipo);
+    if (filtros.marca) p.set("marca", "eq." + filtros.marca);
+    if (filtros.disp) p.set("disponivel", "eq.true");
+    for (let offset = 0;;) {
+      p.set("offset", offset);
+      const r = await fetch(C.supabaseUrl + "/rest/v1/catalogo?" + p, {
+        headers: {apikey: C.supabaseAnonKey, Authorization: "Bearer " + C.supabaseAnonKey}, signal});
+      if (!r.ok) throw new Error("Busca indisponível");
+      const lote = await r.json();
+      linhas.push(...lote.filter(aceita));
+      if (lote.length < Number(p.get("limit"))) break;
+      if (previa && new Set(linhas.map(r => r.grupo)).size > 6) {
+        const ultimo = lote[lote.length - 1].grupo;
+        linhas = linhas.filter(r => r.grupo !== ultimo);
+        break;
+      }
+      offset += lote.length;
+    }
+  }
+  const grupos = new Map();
+  for (const r of linhas) {
+    const chave = r.grupo;
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave).push(r);
+  }
+  return [...grupos.values()].flatMap(ofertas => {
+    const [item] = agregarDemo(ofertas);
+    if (!item) return [];
+    const cores = new Set(ofertas.map(r => r.cor));
+    return [{...item, linhasBuscadas: ofertas, corBuscada: cores.size === 1 ? ofertas[0].cor : null}];
+  });
 }
 async function preverProdutos(termo, signal) {
   const palavras = toks(termo);
-  if (DEMO) {
-    await carregarDemo();
-    VITRINE_DEMO ||= agregarDemo(demoCatalogo());
-    return aplicarCorBuscada(VITRINE_DEMO.filter(v => correspondeNaDemo(v, palavras)).slice(0, 6), palavras);
-  }
-  const params = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,disponivel",
-    and: "(" + filtroDeBusca(palavras) + ")", order: "disponivel.desc,n_lojas.desc,grupo.asc", limit: "6"});
-  const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${params}`,
-    {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`}, signal});
-  if (!r.ok) throw new Error("Sugestões indisponíveis");
-  return aplicarCorBuscada(await r.json(), palavras);
+  return ordenar(await pesquisarOfertas(palavras, {}, signal, true)).slice(0, 6);
 }
 
 function agendarSugestoes() {
@@ -248,7 +267,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
     const melhor = comCor.filter(r => r.disponivel && r.preco).sort((a, b) => a.preco - b.preco)[0] || comCor[0] || todas[0];
     corAtual = norm(melhor.cor) || "_";
   }
-  const linhas = todas.filter(r => (norm(r.cor) || "_") === corAtual || (!r.cor && temCores));
+  const linhas = todas.filter(r => (norm(r.cor) || "_") === corAtual);
   const porLoja = new Map();
   for (const r of linhas) { const a = porLoja.get(r.loja); if (!a || (r.disponivel && !a.disponivel) || (r.disponivel === a.disponivel && (r.preco || 1e9) < (a.preco || 1e9))) porLoja.set(r.loja, r); }
   const lista = [...porLoja.values()].sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
@@ -259,27 +278,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
   const nomeProduto = g.nome || ref.produto;
   await carregarOficiais();
   const oficial = oficialDe(ref.marca);
-  const temOficialNaLista = oficial && lista.some(r => r.loja === oficial.loja);
-  // loja oficial já está no catálogo mas com outro nome de produto? procura lá e mostra o preço
-  const GENERICAS = new Set(["blush","batom","base","gloss","labial","liquido","liquida","po","compacto","em","de","da","do","bastao","stick","edition","matte","maquiagem","facial","cor","lip","tint","sombra","paleta","corretivo","iluminador","mascara","cilios","delineador","primer","fixador","pro","new","novo","nova"]);
-  if (oficial && oficial.loja && !temOficialNaLista && !DEMO) {
-    const marcaTs = new Set(toks(oficial.marca).concat(...(oficial.apelidos || []).map(toks)));
-    const chave = toks(nomeProduto).filter(t => !marcaTs.has(t) && !GENERICAS.has(t) && !/\d/.test(t)).sort((a, b) => b.length - a.length).slice(0, 3);
-    if (chave.length >= 2) {   // só com 2+ palavras próprias do produto, pra não confundir com outro
-      try {
-        const filtro = chave.map(t => `busca.ilike.*${t}*`).join(",");
-        const achados = await api(`catalogo?select=${CAMPOS}&loja=eq.${encodeURIComponent(oficial.loja)}&categoria=eq.${encodeURIComponent(cat)}&and=(${encodeURIComponent(filtro)})&order=disponivel.desc,preco.asc.nullslast&limit=40`);
-        const confere = achados.filter(r => chave.every(t => norm(r.produto).includes(t)));
-        const mesmoTom = confere.find(r => corAtual !== "_" && norm(r.cor) === corAtual);
-        if (mesmoTom) lista.push(mesmoTom);
-        else if (confere.length && corAtual === "_") lista.push(confere.find(r => r.disponivel) || confere[0]);
-      } catch (e) { console.warn(e); }
-    }
-  }
-  const temOficialAgora = oficial && lista.some(r => r.loja === oficial.loja);
-  lista.sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
-  disp = lista.filter(r => r.disponivel);
-  melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
+
   const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
   alvo().innerHTML = `<div class="painel">
@@ -301,7 +300,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.loja === oficial?.loja ? r.url : urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">${r.disponivel ? "Comprar" : "Ver produto"}</a>` : "<small>Link do item pendente</small>"}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
-          ${oficial && !temOficialAgora ? `<div class="linha-loja oficial"><div><b>${esc(oficial.marca)}</b> ${SELO_OFICIAL}<div class="lt">Preço e estoque desta cor aguardando confirmação.</div></div></div>` : ""}</div>
+          </div>
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
         </div>
@@ -344,7 +343,7 @@ addEventListener("popstate", () => { if ($("#modalProduto").classList.contains("
 async function abrirProduto(v) {
   abrirJanela(); tomFiltro = "";
   try {
-    const linhas = await linhasDoGrupo(v.grupo);
+    const linhas = v.linhasBuscadas || await linhasDoGrupo(v.grupo);
     if (!linhas.length) throw new Error("sem dados");
     const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, cats: new Set([v.categoria]), linhas: linhas.map(r => ({...r, categoria: v.categoria})), tipo: "produto"};
     await abrirComparacao(g, v.categoria, v.corBuscada ? norm(v.corBuscada) : null);
@@ -459,13 +458,17 @@ const arr = l => `{${l.map(x => `"${x.replace(/"/g, '\\"')}"`).join(",")}}`;
 async function consultarVitrine() {
   const de = (F.pagina - 1) * POR_PAGINA;
   const ts = toks(F.busca);
+  if (ts.length) {
+    const l = ordenar(await pesquisarOfertas(ts, {...F}));
+    return {itens: l.slice(de, de + POR_PAGINA), total: l.length};
+  }
   if (DEMO) {
     await carregarDemo();
     VITRINE_DEMO ||= agregarDemo(demoCatalogo());
     let l = VITRINE_DEMO.filter(v => (!F.tipo || v.categoria === F.tipo) && (!F.disp || v.disponivel) && (!F.marca || v.marca === F.marca)
       && (!F.lojas.length || F.lojas.some(x => (F.disp ? v.lojas_disponiveis : v.lojas).includes(x)))
       && correspondeNaDemo(v, ts));
-    return {itens: await aplicarCorBuscada(ordenar(l).slice(de, de + POR_PAGINA), ts), total: l.length};
+    return {itens: ordenar(l).slice(de, de + POR_PAGINA), total: l.length};
   }
   const p = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,loja_min,url_min,lojas,lojas_disponiveis,n_lojas,n_cores,disponivel"});
   if (F.tipo) p.set("categoria", `eq.${F.tipo}`);
@@ -482,7 +485,7 @@ async function consultarVitrine() {
   const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${p}`, {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`, Prefer: "count=exact"}});
   if (!r.ok) throw new Error(`Erro ${r.status}`);
   const total = +((r.headers.get("content-range") || "").split("/")[1] || 0);
-  return {itens: await aplicarCorBuscada(await r.json(), ts), total};
+  return {itens: await r.json(), total};
 }
 function ordenar(l) {
   const pr = v => v.preco_min ?? 1e9;
