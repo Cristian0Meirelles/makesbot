@@ -1,0 +1,37 @@
+ROBO DO TIKTOK SHOP E DAS LOJAS (roda no seu PC, com o seu Chrome)
+======================================================
+
+O que ele faz, 2x por dia (09:00 e 21:00):
+  1. Abre uma janela do Google Chrome.
+  2. Entra no TikTok Shop e passa por todas as categorias de maquiagem
+     (batom, gloss, blush, base, corretivo, po, sombra, mascara, delineador,
+     sobrancelha, iluminador, primer, fixador e kits), de todas as lojas.
+  3. Pega nome, marca, preco, foto e se esta esgotado.
+  4. Depois entra nas lojas configuradas em config\lojas.yaml -> lojas_navegador
+     (hoje: MAC Cosmetics), passa pelas categorias de maquiagem, abre cada
+     produto e le nome, cor, preco, foto, estoque e link. So le: nao compra,
+     nao faz login, nao preenche nada.
+  5. Atualiza o banco (Supabase) do Voltou! -> o Catalogo do site muda na hora.
+  6. Abre o seu site no Catalogo pra voce ver.
+
+Se aparecer o quebra-cabeca de verificacao do TikTok, resolva na janela:
+o robo espera ate 10 minutos e continua sozinho.
+
+INSTALAR (uma vez so)
+  1. Tenha o Google Chrome e o Python instalados
+     (python.org -> marque "Add python.exe to PATH").
+  2. De dois cliques em  robo-tiktok\instalar.bat
+  3. Quando abrir o Bloco de Notas, cole SUPABASE_URL e SUPABASE_SERVICE_KEY
+     (os mesmos dos Secrets do GitHub), salve e feche.
+  Pronto: ja fica agendado.
+
+RODAR NA HORA
+  Dois cliques em  robo-tiktok\rodar.bat
+
+OBSERVACOES
+  - O PC precisa estar ligado e com voce logado no horario.
+  - O robo usa um perfil de Chrome so dele (pasta .voltou-robo-chrome no seu
+    usuario), separado do seu Chrome normal.
+  - O arquivo robo-tiktok\.env tem a chave do Supabase: nao envie pra ninguem
+    e nao suba pro GitHub (ele ja esta no .gitignore).
+  - Ajustes (categorias, tempo de espera etc.): config\lojas.yaml -> tiktok_catalogo

@@ -17,7 +17,8 @@ ARQUIVO = Path(__file__).resolve().parent.parent / "config" / "ofertas_manuais.y
 def loja_do_link(url: str) -> str:
     host = urlparse(url).netloc.lower()
     if "tiktok" in host:
-        return "TikTok Shop"
+        # nome diferente do catálogo automático ("TikTok Shop"), senão um apagaria o outro
+        return "TikTok Shop (seleção)"
     if "mercadolivre" in host or "meli.la" in host:
         return "Mercado Livre"
     if "shopee" in host:

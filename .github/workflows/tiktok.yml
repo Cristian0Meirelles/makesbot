@@ -16,7 +16,7 @@ permissions:
 jobs:
   radar:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,3 +40,22 @@ jobs:
           META_WA_PHONE_ID: ${{ secrets.META_WA_PHONE_ID }}
           META_WA_TEMPLATE: ${{ vars.META_WA_TEMPLATE }}
         run: python -m bot.main tiktok
+
+      - name: Instalar navegador (para o catálogo do TikTok)
+        run: |
+          pip install "playwright>=1.47"
+          python -m playwright install --with-deps chromium
+
+      - name: Catálogo de maquiagem do TikTok Shop (todas as lojas)
+        continue-on-error: true   # se o TikTok bloquear, o resto do site segue normal
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_WHATSAPP: ${{ secrets.ADMIN_WHATSAPP }}
+          ADMIN_CALLMEBOT_KEY: ${{ secrets.ADMIN_CALLMEBOT_KEY }}
+        run: python -m bot.main tiktok_catalogo

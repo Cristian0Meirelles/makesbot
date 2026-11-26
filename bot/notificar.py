@@ -170,6 +170,22 @@ class Notificador:
                 log.warning("Falha no %s para inscrição %s: %s", canal, inscricao["id"], erro)
         return linhas
 
+    def alerta_admin(self, assunto: str, texto: str) -> bool:
+        """Aviso de problema/relatório para o dono do site (e-mail e, se tiver, WhatsApp)."""
+        if not (self.admin_email or self.admin_wpp):
+            log.warning("Sem ADMIN_EMAIL/ADMIN_WHATSAPP; aviso não enviado: %s", assunto)
+            return False
+        ok = False
+        if self.admin_email:
+            corpo = ("<div style='font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;white-space:pre-wrap'>"
+                     + html.escape(texto) + "</div>")
+            ok, erro = self.enviar_email(self.admin_email, f"[Voltou! robô] {assunto}", corpo, texto)
+            if not ok:
+                log.warning("E-mail do admin falhou: %s", erro)
+        if self.admin_wpp and self.admin_wpp_key:
+            ok = self.enviar_whatsapp(self.admin_wpp, f"[Voltou! robô] {assunto}\n\n{texto[:900]}", self.admin_wpp_key)[0] or ok
+        return ok
+
     def avisar_admin(self, produto: dict, achados: list[dict]):
         if not (self.admin_email or self.admin_wpp):
             return

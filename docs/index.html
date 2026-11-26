@@ -543,7 +543,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
 
       <div class="numeros">
         <div><b id="nProdutos">—</b>produtos no radar</div>
-        <div><b id="nCatalogo">—</b>itens no catálogo</div>
+        <div title="Cada produto em cada cor e em cada loja conta como uma oferta. No Catálogo, as cores e lojas do mesmo produto aparecem juntas num card só."><b id="nCatalogo">—</b>ofertas (cores × lojas)</div>
         <div><b id="nLojas">—</b>lojas monitoradas</div>
         <div><b>5 min</b>entre cada checagem</div>
       </div>
@@ -838,9 +838,10 @@ function destacar(texto, termo) {
 function mostrarSugestoes(grupos, termo) {
   sugAtual = grupos; sugIdx = grupos.length ? 0 : -1;
   if (!grupos.length) {
-    sug.innerHTML = `<div class="sug-vazio">Nada no catálogo com "${esc(termo)}" ainda. <a href="#alerta" id="criarDireto" style="color:var(--rosa);font-weight:600">Criar um alerta mesmo assim →</a></div>`;
+    sug.innerHTML = `<div class="sug-vazio"><b style="color:var(--texto)">“${esc(termo)}” ainda não está na nossa plataforma.</b><br>Peça pra gente: a gente vai atrás desse produto e te avisa quando achar. Se tiver o link de alguma loja, mande junto que ajuda.<br><a href="#alerta" id="criarDireto" style="display:inline-block;margin-top:8px;color:var(--rosa);font-weight:700">Pedir este produto →</a></div>`;
     sug.classList.add("on"); atualizarFantasma("");
-    $("#criarDireto").onclick = () => { $("#nome").value = termo; sug.classList.remove("on"); };
+    $("#criarDireto").onclick = e => { e.preventDefault(); sug.classList.remove("on"); pedirProduto(termo); };
+    registrarBuscaVazia(termo);
     return;
   }
   sug.innerHTML = grupos.map((g, i) => `
@@ -1079,6 +1080,33 @@ $("#fecharProduto").onclick = () => fecharProduto();
 $("#modalProduto").onclick = e => { if (e.target.id === "modalProduto") fecharProduto(); };
 addEventListener("keydown", e => { if (e.key === "Escape") fecharProduto(); });
 
+/* ------------------------------------------------ produto que não temos */
+const PISTAS_CAT = [["lip tint","Lip tint"],["tint","Lip tint"],["gloss","Gloss"],["lapis de boca","Lápis labial"],["lapis labial","Lápis labial"],["batom","Batom"],["blush","Blush"],["iluminador","Iluminador"],["bronzer","Bronzer"],["contorno","Contorno"],["corretivo","Corretivo"],["primer","Primer"],["fixador","Fixador"],["base","Base"],["po","Pó"],["paleta","Sombra"],["sombra","Sombra"],["mascara","Máscara de cílios"],["rimel","Máscara de cílios"],["delineador","Delineador"],["sobrancelha","Sobrancelha"]];
+function pedirProduto(termo) {
+  const t = " " + norm(termo) + " ";
+  const marca = [...MARCAS].sort((a, b) => b.length - a.length).find(m => t.includes(" " + norm(m) + " ")) || "";
+  const cat = (PISTAS_CAT.find(([p]) => t.includes(" " + p + " ")) || [, "Outro"])[1];
+  const nome = (marca ? t.replace(" " + norm(marca) + " ", " ") : t).trim() || termo;
+  preencherAlerta({categoria: cat, marca, nome: nome.replace(/\b\w/g, c => c.toUpperCase()), cor: ""});
+  setTimeout(() => { $("#link").focus({preventScroll: true}); toast("Esse ainda não temos. Confira os campos, cole o link se tiver, e a gente vai atrás 💄"); }, 700);
+}
+const BUSCAS_REGISTRADAS = new Set();
+function registrarCatVazia(termo) {
+  const n = norm(termo);
+  if (DEMO || n.length < 4 || BUSCAS_REGISTRADAS.has(n)) return;
+  BUSCAS_REGISTRADAS.add(n); rpc("registrar_busca_vazia", {p_termo: termo}).catch(() => {});
+}
+let timerVazia;
+function registrarBuscaVazia(termo) {
+  clearTimeout(timerVazia);
+  timerVazia = setTimeout(() => {   // só registra quando a pessoa para de digitar
+    const n = norm(termo);
+    if (DEMO || n.length < 4 || BUSCAS_REGISTRADAS.has(n) || norm(q.value) !== n) return;
+    BUSCAS_REGISTRADAS.add(n);
+    rpc("registrar_busca_vazia", {p_termo: termo}).catch(() => {});
+  }, 1500);
+}
+
 function preencherAlerta({categoria, marca, nome, cor}) {
   const r = $$("#cats input").find(i => i.value === categoria) || $$("#cats input").find(i => i.value === "Outro");
   if (r) r.checked = true;
@@ -1227,7 +1255,7 @@ async function carregarCatalogo() {
     $("#catInfo").innerHTML = `<span>${total ? `<b>${total.toLocaleString("pt-BR")}</b> produto${total > 1 ? "s" : ""}` : "Nenhum produto"}</span>` + etiquetasAtivas();
     ligarEtiquetas();
     $("#sideVer").textContent = total ? `Ver ${total.toLocaleString("pt-BR")} produtos` : "Ver produtos";
-    $("#gradeCat").innerHTML = itens.map(cardVitrine).join("") || `<div class="vazio">Nada encontrado com esses filtros. <button class="limpar" onclick="document.getElementById('fLimpar').click()">Limpar filtros</button> ou <a href="#alerta" style="color:var(--rosa);font-weight:600">crie um alerta</a> que a gente procura pra você.</div>`;
+    $("#gradeCat").innerHTML = itens.map(cardVitrine).join("") || (F.busca && !(F.marca || F.disp || F.tipo || F.lojas.length || F.cores.length || F.tons.length) ? (registrarCatVazia(F.busca), `<div class="vazio"><b>“${esc(F.busca)}” ainda não está na nossa plataforma.</b><br>Peça pra gente que a gente vai atrás e te avisa quando achar (se tiver o link, mande junto).<br><br><a href="#alerta" onclick="event.preventDefault();pedirProduto(${esc(JSON.stringify(F.busca))})" style="color:var(--rosa);font-weight:700">Pedir este produto →</a> · <button class="limpar" onclick="document.getElementById('fLimpar').click()">Limpar filtros</button></div>`) : `<div class="vazio">Nada encontrado com esses filtros. <button class="limpar" onclick="document.getElementById('fLimpar').click()">Limpar filtros</button> ou <a href="#alerta" style="color:var(--rosa);font-weight:600">crie um alerta</a> que a gente procura pra você.</div>`);
     $$("#gradeCat .card").forEach(c => { const abre = () => abrirProduto(ITENS_CAT[+c.dataset.i]); c.onclick = abre; c.onkeydown = e => { if (e.key === "Enter") abre(); }; });
     paginacao(total);
   } catch (e) {

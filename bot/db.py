@@ -84,9 +84,20 @@ class SupabaseDB:
 
     def catalogo_por_grupos(self, grupos: list[str]) -> list[dict]:
         saida = []
-        for g in grupos:
-            saida += self._req("GET", "catalogo", params={"grupo": f"eq.{g}", "select": "*", "limit": "2000"}) or []
+        for i in range(0, len(grupos), 40):
+            lote = ",".join('"' + g.replace("\\", "\\\\").replace('"', '\\"') + '"' for g in grupos[i:i + 40])
+            saida += self._req("GET", "catalogo", params={"grupo": f"in.({lote})", "select": "*", "limit": "10000"}) or []
         return saida
+
+    def catalogo_completo_da_loja(self, loja: str) -> list[dict]:
+        saida, inicio = [], 0
+        while True:
+            parte = self._req("GET", "catalogo", params={"loja": f"eq.{loja}", "select": "*"},
+                              headers={"Range": f"{inicio}-{inicio + 999}"}) or []
+            saida += parte
+            if len(parte) < 1000:
+                return saida
+            inicio += 1000
 
     def lojas_curadoria(self) -> list[str]:
         return [l["nome"] for l in self._req("GET", "lojas", params={"tipo": "eq.curadoria", "select": "nome"}) or []]
@@ -102,6 +113,34 @@ class SupabaseDB:
 
     def apagar_loja(self, nome: str):
         self._req("DELETE", f"lojas?nome=eq.{quote(nome)}")
+
+    def lojas_todas(self) -> list[dict]:
+        return self._req("GET", "lojas", params={"select": "*"}) or []
+
+    def buscas_vazias_desde(self, desde: dt.datetime, limite: int = 30) -> list[dict]:
+        try:
+            return self._req("GET", "buscas_vazias", params={
+                "ultima": f"gte.{_iso(desde)}", "select": "termo,vezes,ultima",
+                "order": "vezes.desc", "limit": str(limite)}) or []
+        except RuntimeError:
+            return []  # SQL 003 ainda não foi rodado
+
+    def contar(self, tabela: str, filtro: dict | None = None) -> int | None:
+        r = self.s.get(f"{self.base}/{tabela}", params={"select": "*", **(filtro or {})},
+                       headers={"Prefer": "count=exact", "Range": "0-0"}, timeout=30)
+        try:
+            return int(r.headers.get("content-range", "*/").split("/")[-1])
+        except ValueError:
+            return None
+
+    def produtos_sem_oferta(self, limite: int = 30) -> list[dict]:
+        """Produtos pedidos no radar que ainda não acharam nenhuma loja."""
+        try:
+            return self._req("GET", "produtos", params={
+                "ativo": "eq.true", "disponivel": "is.false", "select": "marca,nome,cor,links,criado_em",
+                "order": "criado_em.desc", "limit": str(limite)}) or []
+        except RuntimeError:
+            return []
 
     def limpar_catalogo(self, antes: dt.datetime):
         self._req("DELETE", f"catalogo?atualizado_em=lt.{quote(_iso(antes))}")

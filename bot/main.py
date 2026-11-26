@@ -2,6 +2,10 @@
 Uso:
   python -m bot.main rapido            # todas as lojas + links (menos TikTok) — roda a cada 5 min
   python -m bot.main tiktok            # só links do TikTok Shop — roda 2x por dia
+  python -m bot.main tiktok_catalogo   # catálogo de maquiagem de todas as lojas do TikTok Shop — 2x por dia
+  python -m bot.main tiktok_catalogo --chrome   # o mesmo, abrindo o Google Chrome do seu PC (robo-tiktok/)
+  python -m bot.main navegador --chrome   # lojas que bloqueiam o GitHub (ex.: MAC), lidas pelo Chrome do PC
+  python -m bot.main saude             # relatório diário por e-mail: robôs, buscas sem resultado, pedidos sem loja
   python -m bot.main feeds             # feeds oficiais de afiliados (Awin) — 1x por hora
   python -m bot.main catalogo          # atualiza o catálogo do autocompletar — 1x por dia
   python -m bot.main testar            # mostra quais lojas estão respondendo
@@ -88,8 +92,11 @@ def testar(cfg: dict, args) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "testar"], nargs="?", default="rapido")
+    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "tiktok_catalogo", "navegador", "saude", "testar"], nargs="?", default="rapido")
     ap.add_argument("--seco", action="store_true")
+    ap.add_argument("--chrome", action="store_true", help="usa o Google Chrome do PC, com janela (tiktok_catalogo)")
+    ap.add_argument("--loja", help="navegador: só esta loja (ex.: \"MAC Cosmetics\")")
+    ap.add_argument("--sem-abrir-site", action="store_true", help="não abre o site no final (tiktok_catalogo --chrome)")
     ap.add_argument("--email")
     ap.add_argument("--whatsapp")
     ap.add_argument("--callmebot")
@@ -138,9 +145,37 @@ def main(argv=None) -> int:
             for loja in antigas - lojas_novas:
                 db.apagar_loja(loja)
             if linhas:
-                db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n == "TikTok Shop" else None,
+                db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n.startswith("TikTok Shop") else None,
                                   "tipo": "curadoria", "frequencia": "ofertas selecionadas", "ok": True,
                                   "atualizado_em": agora.isoformat()} for n in sorted(lojas_novas)])
+        return 0
+
+    if args.modo == "saude":
+        from . import saude
+        saude.rodar(db)
+        return 0  # o aviso já foi por e-mail; não marca a Action como falha
+
+    if args.modo == "navegador":
+        from . import lojas_navegador as N
+        n = N.atualizar(db, cfg, chrome=args.chrome or True, so_loja=args.loja)
+        print(f"\n✅ {n} ofertas lidas pelo navegador.")
+        return 0
+
+    if args.modo == "tiktok_catalogo":
+        from . import tiktok_catalogo as T
+        if args.seco:
+            linhas, completo = T.coletar(cfg, chrome=args.chrome)
+            print(f"{len(linhas)} produtos ({'completo' if completo else 'parcial: TikTok bloqueou'})")
+            for l in linhas[:30]:
+                print(f"  {'✅' if l['disponivel'] else '❌'} {l['categoria']:<18} {str(l['marca'] or '-'):<18} "
+                      f"{l['preco'] or '':>8}  {l['produto'][:70]}")
+        else:
+            n = T.atualizar(db, cfg, chrome=args.chrome)
+            if args.chrome and not args.sem_abrir_site:
+                import webbrowser
+                site = os.getenv("SITE_URL") or "https://voltou-lilac.vercel.app"
+                print(f"\n✅ {n} produtos do TikTok Shop atualizados. Abrindo o site: {site}")
+                webbrowser.open(site.rstrip("/") + "/#catalogo")
         return 0
 
     if args.modo == "catalogo":
@@ -149,7 +184,10 @@ def main(argv=None) -> int:
             atualizar_catalogo(cfg, lambda l: print(f"  {len(l)} itens, ex.: {l[0]['titulo']}"), lambda d: None)
         else:
             atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo, salvar_vitrine=db.salvar_vitrine,
-                               limpar_vitrine=db.limpar_vitrine)
+                               limpar_vitrine=db.limpar_vitrine,
+                               extras_vitrine=lambda: [r for nome in ["TikTok Shop"] + [
+                                   l["nome"] for l in (cfg.get("lojas_navegador") or {}).get("lojas") or []]
+                                   for r in db.catalogo_completo_da_loja(nome)])
         return 0
 
     motor = Motor(db, cfg, Notificador(seco=args.seco))

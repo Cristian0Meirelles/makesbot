@@ -1,0 +1,3 @@
+*.bat text eol=crlf
+robo-tiktok/*.txt text eol=crlf
+robo-tiktok/.env.exemplo text eol=crlf

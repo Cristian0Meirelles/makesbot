@@ -7,8 +7,9 @@ Site + bot que fica de olho nas lojas 24h e avisa por **e-mail** e **WhatsApp** 
 | O que roda | Quando |
 |---|---|
 | Radar de estoque: todas as lojas + links colados | a cada 5 min |
-| Links do TikTok Shop | 2x por dia (09h e 21h) |
+| Links do TikTok Shop + catálogo de maquiagem de todas as lojas do TikTok Shop | 2x por dia (09h e 21h) |
 | Catálogo do autocompletar (pega lançamentos sozinho) | 1x por dia (04h) |
+| Relatório por e-mail: robôs com problema, o que procuraram e não acharam, pedidos sem loja | 1x por dia (depois do catálogo) |
 | Religar agendamentos (o GitHub desliga após 60 dias parado) | toda semana |
 
 O bot **só manda mensagem quando o produto volta** (passa de esgotado para disponível). Se ele piscar (esgota e volta logo), não repete o aviso da mesma loja para a mesma pessoa antes de 12h.
@@ -117,7 +118,7 @@ Rodar no seu PC (opcional): `pip install -r requirements.txt` e depois `python -
 - **Lojas que funcionam na busca automática** (teste de 25/11/2026): Época Cosméticos, Amo Beleza, Pague Menos, Lojas Americanas, Océane, Mari Maria Makeup, Dailus, Catharine Hill e Hinode.
 - **Sephora, Beleza na Web, MAC, Boticário, QDB, Natura, Vult e outras bloqueiam robôs** (respondem 403 para servidores). O bot respeita o bloqueio e não tenta burlar. O caminho certo para elas é o **feed de produtos do programa de afiliados** (Awin, Lomadee etc.), que traz preço e estoque de forma oficial, e você ainda ganha a comissão. Dá pra plugar depois.
 - **Mercado Livre** não entrega a página de busca para servidores. A forma oficial é a API do Mercado Livre com um app de desenvolvedor (grátis); dá pra adicionar depois.
-- **TikTok Shop** bloqueia robôs com frequência. Por isso só checamos 2x por dia e só por link colado. Se bloquear, aparece no log e o estado não muda (ninguém recebe aviso falso).
+- **TikTok Shop** bloqueia robôs com frequência. Por isso só checamos 2x por dia. Além dos links colados, o bot abre as categorias de maquiagem do TikTok Shop num navegador (`bot/tiktok_catalogo.py`, configurado em `tiktok_catalogo` no `config/lojas.yaml`) e põe no catálogo os produtos de todas as lojas que aparecem lá. O site do TikTok mostra no máximo ~100 produtos por categoria, então não é tudo. Como o TikTok costuma bloquear os servidores do GitHub, dá pra rodar o mesmo robô **no seu PC, abrindo o seu Google Chrome**: veja `robo-tiktok/LEIA-ME.txt`. Se aparecer a verificação (CAPTCHA), o bot para, guarda o que já pegou e não tenta burlar; o estado não muda (ninguém recebe aviso falso).
 - **Sites de marca** que não são VTEX/Shopify (o teste mostra ❌) só são monitorados pelos **links** que as pessoas colam. Funciona com qualquer página de produto que publique os dados padrão de produto (a maioria publica).
 - **Amazon** bloqueia robôs; cole o link e o bot tenta, mas pode não funcionar.
 - O bot nunca compra nada: ele manda o link, e a pessoa compra.
@@ -125,3 +126,15 @@ Rodar no seu PC (opcional): `pip install -r requirements.txt` e depois `python -
 ---
 
 © 2026 Cristiano Cotrin Meirelles. Todos os direitos reservados. Código proprietário, veja [LICENSE](LICENSE). Proibido copiar, modificar, redistribuir ou vender sem autorização por escrito do autor.
+
+## Robôs de reserva e avisos de problema
+
+- O catálogo do TikTok Shop tem **dois robôs**: um no GitHub (9h e 21h) e um no seu PC (`robo-tiktok/`, também 9h e 21h). O que conseguir primeiro atualiza o site; se os dois rodarem, o segundo só confirma.
+- Cada rodada **tenta de novo** se falhar (`tentativas` e `espera_entre_tentativas_min` em `config/lojas.yaml → tiktok_catalogo`).
+- Se ainda assim vier bloqueio, coleta parcial ou poucos produtos (`minimo_produtos`), o robô **manda e-mail para o `ADMIN_EMAIL`** dizendo o motivo. Bloqueio: rode o robô do PC. Zero produtos sem bloqueio: o TikTok mudou o site e é hora de uma nova versão do `bot/tiktok_catalogo.py`.
+- Todo dia sai um **relatório** (`python -m bot.main saude`) com: robôs parados, lojas sem responder, total do catálogo, **o que as pessoas procuraram e não acharam** e **pedidos do radar que ainda não acharam loja**. Para registrar as buscas sem resultado, rode uma vez `supabase/003_buscas_e_saude.sql` no SQL Editor do Supabase.
+- Secrets usados nos avisos: `ADMIN_EMAIL` (e `SMTP_USER`/`SMTP_PASSWORD`); opcional `ADMIN_WHATSAPP` + `ADMIN_CALLMEBOT_KEY`.
+
+### Por que o site mostra menos produtos do que o número do catálogo?
+O número do topo conta **ofertas**: cada cor de cada produto em cada loja é uma linha (ex.: 47 mil). O Catálogo junta todas as cores e lojas do mesmo produto num card só (ex.: 15 mil produtos). Nada está faltando; são duas formas de contar.
+

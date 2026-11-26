@@ -285,7 +285,7 @@ def test_ofertas_manuais(tmp_path, monkeypatch):
 """, encoding="utf-8")
     monkeypatch.setattr(manuais, "ARQUIVO", arq)
     of = manuais.carregar({})
-    assert len(of) == 1 and of[0][0].loja == "TikTok Shop" and of[0][0].preco == 89.9 and of[0][1] == "Blush"
+    assert len(of) == 1 and of[0][0].loja == "TikTok Shop (seleção)" and of[0][0].preco == 89.9 and of[0][1] == "Blush"
     # aviso para quem espera
     produto = {"id": "p1", "categoria": "Blush", "marca": "MAC", "nome": "Powder Blush", "cor": "Film Noir", "links": [],
                "ativo": True, "disponivel": False, "inscricoes": [{"id": "i1", "email": "a@b.com", "token": "t", "ativo": True}]}
@@ -309,3 +309,98 @@ def test_lapis_de_boca_nao_e_contorno():
     for nome in ["Lápis de Contorno Labial MAC Ruby Woo", "Lip Pencil MAC Ruby Woo", "Delineador Labial Vult"]:
         assert categoria_de(Oferta("L", "x", "u", True, extra={"produto": nome, "categorias": ""}), None) == "Lápis labial", nome
     assert categoria_de(Oferta("L", "x", "u", True, extra={"produto": "Paleta de Contorno Facial", "categorias": ""}), None) == "Contorno"
+
+
+# ---------------------------------------------------------------- catálogo do TikTok Shop
+def test_tiktok_card_e_marca():
+    from bot import tiktok_catalogo as T
+    marcas = T._lista_marcas()
+    card = {"link": "https://shop.tiktok.com/br/pdp/batom-mac-hidratante/1736022415213954921?x=1",
+            "titulo": "Batom MAC Hidratante Brilhante Lustreglass Sheer-Shine",
+            "texto": "Batom MAC Hidratante Brilhante Lustreglass Sheer-Shine\n4.9\n8.5K vendido\nDeal\n-36%R$88,80R$139,00",
+            "imagem": "https://img/x.webp"}
+    o = T.card_para_oferta(card, marcas)
+    assert o.extra["marca"] == "MAC" and o.preco == 88.8 and o.extra["preco_de"] == 139.0
+    assert o.url.endswith("/1736022415213954921") and o.disponivel
+    assert T.marca_do_titulo("Kit Gloss Labial Sarah’s Beauty – Brilho", marcas) in ("Sarah's Beauty", "Sarahs Beauty")
+    assert T.marca_do_titulo("Gel Para Sobrancelhas Ruby Rose Brow", marcas) == "Ruby Rose"
+    assert T.marca_do_titulo("M·A·C Ruby Woo", marcas) == "MAC"
+    assert T.marca_do_titulo("Base Macrilan Matte", marcas) == "Macrilan"
+    assert T.marca_do_titulo("Pó compacto maquiagem natural", marcas) is None
+    esg = T.card_para_oferta(dict(card, texto=card["texto"] + "\nEsgotado"), marcas)
+    assert not esg.disponivel
+
+
+def test_tiktok_pagina_produto_e_linhas():
+    import datetime as dt
+    from bot import tiktok_catalogo as T
+    txt = ("TikTok Shop\nBatom MAC\nVendido por MAC\n-36%\nR$\n88\n.80\nCor:\nAlone Time\nComprar agora\n"
+           "Sobre este produto\nDetalhes\nMarca MAC\nAvaliações\nachei que estava esgotado mas chegou")
+    info = T.ler_pagina_produto(txt)
+    assert info == {"marca": "MAC", "vendedor": "MAC", "disponivel": True}
+    assert T.ler_pagina_produto("Vendido por X\nEsgotado\nSobre este produto")["disponivel"] is False
+    marcas = T._lista_marcas()
+    cards = [
+        {"link": "https://shop.tiktok.com/br/pdp/a/1", "titulo": "Blush Compacto Ruby Rose", "texto": "R$19,90"},
+        {"link": "https://shop.tiktok.com/br/pdp/b/2", "titulo": "Kit Pincel de Maquiagem 12 peças", "texto": "R$29,90"},
+    ]
+    ofs = [(T.card_para_oferta(c, marcas), None) for c in cards]
+    linhas = T.montar_linhas(ofs, dt.datetime(2026, 11, 26, tzinfo=dt.timezone.utc))
+    assert len(linhas) == 1 and linhas[0]["categoria"] == "Blush" and linhas[0]["loja"] == "TikTok Shop"
+    assert linhas[0]["marca"] == "Ruby Rose" and linhas[0]["preco"] == 19.9
+
+
+def test_tiktok_tenta_de_novo_e_avisa(monkeypatch):
+    from bot import tiktok_catalogo as T
+    chamadas, avisos = [], []
+    monkeypatch.setattr(T, "coletar", lambda cfg, agora=None, chrome=False: (chamadas.append(1), ([], False))[1])
+    monkeypatch.setattr(T, "_avisar_problema", lambda cfg, motivo, n, chrome: avisos.append(motivo))
+    monkeypatch.setattr(T.time, "sleep", lambda s: None)
+
+    class DB:
+        lojas = []
+        def salvar_lojas(self, l): self.lojas += l
+    db = DB()
+    assert T.atualizar(db, {"tiktok_catalogo": {"tentativas": 3}}) == 0
+    assert len(chamadas) == 3 and len(avisos) == 1 and db.lojas[-1]["ok"] is False
+
+
+def test_relatorio_saude():
+    from bot import saude
+    agora = dt.datetime(2026, 11, 26, 12, tzinfo=dt.timezone.utc)
+
+    class DB:
+        def lojas_todas(self):
+            return [{"nome": "TikTok Shop", "ok": True, "atualizado_em": "2026-11-24T12:00:00+00:00"},
+                    {"nome": "Océane", "ok": True}, {"nome": "Hinode", "ok": False}]
+        def contar(self, t, f=None): return {"catalogo": 47489, "vitrine": 15012}.get(t, 300)
+        def buscas_vazias_desde(self, d): return [{"termo": "blush film noir", "vezes": 3}]
+        def produtos_sem_oferta(self): return [{"marca": "MAC", "nome": "Powder Blush", "cor": "Film Noir", "links": []}]
+    assunto, texto, prob = saude.montar_relatorio(DB(), agora)
+    assert prob and "problema" in assunto
+    assert "TikTok Shop sem atualizar" in texto and "Hinode" in texto
+    assert "blush film noir" in texto and "MAC Powder Blush Film Noir" in texto and "15.012 produtos" in texto
+
+
+# ---------------------------------------------------------------- lojas pelo navegador (MAC)
+MAC_HTML = """<html><head><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":["FAQPage"]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ProductGroup","name":"Lip Tint Lustreglass Stainglass",
+"image":"https://img/grupo.jpg","brand":{"name":"MAC Brazil E-Commerce Site"},"hasVariant":[
+{"@type":"Product","name":"Lip Tint Lustreglass Stainglass - XOXO - 3ml","color":"Nude pêssego quente","image":["https://img/xoxo.jpg"],
+ "offers":{"@type":"Offer","price":127,"priceCurrency":"BRL","availability":"http://schema.org/OutOfStock","url":"/product/13831/147440/x?shade=XOXO"}},
+{"@type":"Product","name":"Lip Tint Lustreglass Stainglass - Zoomies - 3ml","color":"Vermelho cereja",
+ "offers":{"@type":"Offer","price":"127.00","availability":"http://schema.org/InStock","url":"https://www.maccosmetics.com.br/product/13831/147440/x?shade=Zoomies"}}]}</script></head></html>"""
+
+
+def test_navegador_le_produto_mac():
+    from bot import lojas_navegador as N
+    url = "https://www.maccosmetics.com.br/product/13831/147440/produtos/maquiagem/labios/lip-tint"
+    ofs = N.ler_produto("MAC Cosmetics", "MAC", url, MAC_HTML)
+    assert [o.extra["cor"] for o in ofs] == ["XOXO", "Zoomies"]
+    assert [o.disponivel for o in ofs] == [False, True] and ofs[1].preco == 127.0
+    assert ofs[0].url == "https://www.maccosmetics.com.br/product/13831/147440/x?shade=XOXO"
+    assert ofs[0].imagem == "https://img/xoxo.jpg" and ofs[1].imagem == "https://img/grupo.jpg"
+    linhas = N.montar_linhas([(o, N.categoria_da_url(url)) for o in ofs], dt.datetime(2026, 11, 26, tzinfo=dt.timezone.utc))
+    assert {l["categoria"] for l in linhas} == {"Lip tint"} and linhas[0]["marca"] == "MAC" and linhas[0]["loja"] == "MAC Cosmetics"
+    assert N.cor_do_nome("Powder Blush - Film Noir - 6g", "Powder Blush") == "Film Noir"
+    assert N.categoria_da_url("https://x/products/13854/produtos/maquiagem/labios/batom") == "Batom"
