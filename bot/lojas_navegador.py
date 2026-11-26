@@ -28,7 +28,7 @@ from .util import Oferta, normalizar, preco_float
 log = logging.getLogger("navegador")
 
 _LDJSON = re.compile(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', re.S | re.I)
-_DISPONIVEIS = ("instock", "limitedavailability", "onlineonly", "instoreonly", "presale", "preorder")
+_DISPONIVEIS = ("instock", "limitedavailability", "onlineonly")
 _TAMANHO = re.compile(r"^\s*\d+([.,]\d+)?\s*(ml|g|gr|oz|un|unid)\s*$", re.I)
 
 # pedaço da URL da categoria -> categoria do site (quando o nome do produto não diz)
@@ -73,14 +73,14 @@ def _oferta_info(no):
     ofs = no.get("offers") or []
     if isinstance(ofs, dict):
         ofs = ofs.get("offers") or [ofs]
-    disp, preco, url = False, None, None
+    disp, preco, url = None, None, None
     for of in ofs if isinstance(ofs, list) else []:
         a = str(of.get("availability") or "").lower().rsplit("/", 1)[-1]
         p = preco_float(of.get("price") or of.get("lowPrice"))
         if a in _DISPONIVEIS:
             disp, preco = True, p or preco
-        elif preco is None:
-            preco = p
+        elif a in ("outofstock", "soldout", "discontinued") and disp is not True:
+            disp, preco = False, p or preco
         url = url or of.get("url")
     return disp, preco, url
 
@@ -112,6 +112,8 @@ def ler_produto(loja: str, marca: str, url: str, html: str) -> list[Oferta]:
                     if not isinstance(v, dict):
                         continue
                     disp, preco, url_of = _oferta_info(v)
+                    if disp is None:
+                        continue
                     nome_v = str(v.get("name") or produto)
                     cor = cor_do_nome(nome_v, produto) or (str(v.get("color")) if v.get("color") else None)
                     link = urljoin(f"https://{dominio}", url_of or v.get("url") or url)
@@ -128,6 +130,8 @@ def ler_produto(loja: str, marca: str, url: str, html: str) -> list[Oferta]:
         for no in _nos(dado):
             if "product" in _tipos(no) and no.get("name"):
                 disp, preco, url_of = _oferta_info(no)
+                if disp is None:
+                    continue
                 produto = str(no["name"]).strip()
                 return [Oferta(loja, produto, urljoin(f"https://{dominio}", url_of or no.get("url") or url), disp,
                                _img(no), preco, extra={"marca": marca, "produto": produto, "cor": None, "categorias": ""})]
@@ -193,7 +197,10 @@ def _pausa(conf):
 
 
 def _abrir(page, url, conf, espera_verif) -> bool:
-    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    resposta = page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    if resposta and resposta.status >= 400:
+        log.warning("Loja respondeu HTTP %d", resposta.status)
+        return False
     try:
         page.wait_for_load_state("networkidle", timeout=12000)
     except Exception:  # noqa: BLE001
@@ -227,7 +234,8 @@ def _links(page, seletor_regex: str, dominio: str) -> list[str]:
     saida = []
     for h in hrefs:
         h = h.split("#")[0]
-        if urlparse(h).netloc.endswith(dominio.removeprefix("www.")) and rx.search(h):
+        partes = urlparse(h)
+        if partes.scheme == "https" and partes.netloc.removeprefix("www.") == dominio.removeprefix("www.") and rx.search(h):
             saida.append(h.split("?")[0])
     return list(dict.fromkeys(saida))
 
@@ -252,7 +260,7 @@ def coletar_loja(page, loja: dict, agora: dt.datetime, espera_verif: int) -> tup
         if not _abrir(page, cat_url, loja, espera_verif):
             completo = False
             log.warning("%s: bloqueado em %s", nome, cat_url)
-            break
+            return [], False
         _rolar_ate_o_fim(page, loja.get("trecho_produto") or "/product")
         novos = 0
         for p in _links(page, padrao_prod, dominio):
@@ -274,6 +282,7 @@ def coletar_loja(page, loja: dict, agora: dt.datetime, espera_verif: int) -> tup
             achados = ler_produto(nome, marca, url, page.content())
         except Exception as e:  # noqa: BLE001
             log.info("%s: erro em %s: %s", nome, url, e)
+            completo = False
             continue
         ofertas += [(o, dica or categoria_da_url(url)) for o in achados]
         if i % 25 == 0:
@@ -283,7 +292,7 @@ def coletar_loja(page, loja: dict, agora: dt.datetime, espera_verif: int) -> tup
     return linhas, completo
 
 
-def atualizar(db, cfg: dict, chrome: bool = True, so_loja: str | None = None) -> int:
+def atualizar(db, cfg: dict, chrome: bool = False, so_loja: str | None = None, seco: bool = False) -> int:
     from playwright.sync_api import sync_playwright
     from . import tiktok_catalogo as T
     from .catalogo import montar_vitrine
@@ -295,6 +304,7 @@ def atualizar(db, cfg: dict, chrome: bool = True, so_loja: str | None = None) ->
         lojas = [l for l in lojas if normalizar(l["nome"]) == normalizar(so_loja)]
     espera = int(conf.get("esperar_verificacao_min", 10)) * 60 if chrome else 0
     total = 0
+    falhas = []
     with sync_playwright() as pw:
         browser, ctx = T._abrir_navegador(pw, chrome)
         page = ctx.pages[0] if chrome and ctx.pages else ctx.new_page()
@@ -310,6 +320,12 @@ def atualizar(db, cfg: dict, chrome: bool = True, so_loja: str | None = None) ->
                 else:
                     erro = ""
                 minimo = int(loja.get("minimo_ofertas", 50))
+                ok = completo and bool(linhas) and len(linhas) >= minimo
+                if not ok:
+                    falhas.append(loja["nome"])
+                if seco:
+                    total += len(linhas)
+                    continue
                 if linhas:
                     antigos = db.catalogo_da_loja(loja["nome"])
                     grupos = {l["grupo"] for l in linhas} | {r["grupo"] for r in antigos}
@@ -318,8 +334,8 @@ def atualizar(db, cfg: dict, chrome: bool = True, so_loja: str | None = None) ->
                     if vit:
                         db.salvar_vitrine(vit)
                     total += len(linhas)
-                db.salvar_lojas([{"nome": loja["nome"], "dominio": loja["dominio"], "tipo": "navegador (PC)",
-                                  "frequencia": "2x por dia", "ok": bool(linhas) and completo,
+                db.salvar_lojas([{"nome": loja["nome"], "dominio": loja["dominio"], "tipo": "navegador",
+                                  "frequencia": "2x por dia", "ok": ok,
                                   "atualizado_em": agora.isoformat()}])
                 if not completo or len(linhas) < minimo:
                     motivo = erro or ("o site pediu verificação e ninguém resolveu" if not completo
@@ -328,9 +344,11 @@ def atualizar(db, cfg: dict, chrome: bool = True, so_loja: str | None = None) ->
                         f"{loja['nome']}: {motivo}",
                         f"O robô do navegador não conseguiu ler a {loja['nome']} direito.\n\nMotivo: {motivo}\n"
                         f"Ofertas lidas: {len(linhas)} (mínimo esperado: {minimo})\n\n"
-                        "Se o motivo for verificação, rode robo-tiktok\\rodar.bat e resolva na janela.\n"
+                        "Confira a execução em Actions. A próxima rodada é automática.\n"
                         "Se vier 0 sem verificação, o site mudou e precisamos de uma nova versão do robô "
                         "(bot/lojas_navegador.py / config lojas_navegador).")
         finally:
             browser.close()
+    if falhas:
+        raise RuntimeError("Coleta incompleta: " + ", ".join(falhas))
     return total

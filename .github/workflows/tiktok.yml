@@ -42,12 +42,14 @@ jobs:
         run: python -m bot.main tiktok
 
       - name: Instalar navegador (para o catálogo do TikTok)
+        if: ${{ !cancelled() }}
         run: |
-          pip install "playwright>=1.47"
-          python -m playwright install --with-deps chromium
+          pip install -r requirements-browser.txt
+          python -m playwright install --with-deps --only-shell chromium
+        id: browser
 
       - name: Catálogo de maquiagem do TikTok Shop (todas as lojas)
-        continue-on-error: true   # se o TikTok bloquear, o resto do site segue normal
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

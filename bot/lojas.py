@@ -17,6 +17,7 @@ import json
 import logging
 import re
 import threading
+from functools import cache
 from urllib.parse import quote, urljoin, urlparse
 
 import requests
@@ -336,16 +337,17 @@ def ofertas_de_pagina(loja: str, url: str, html: str) -> list[Oferta]:
             ofertas = no.get("offers") or []
             if isinstance(ofertas, dict):
                 ofertas = ofertas.get("offers") or [ofertas]
-            disp, preco = False, None
+            disp, preco = None, None
             for of in ofertas if isinstance(ofertas, list) else []:
                 a = str(of.get("availability") or "").lower().rsplit("/", 1)[-1]
                 if a in _DISPONIVEIS:
                     disp = True
                     preco = preco_float(of.get("price") or of.get("lowPrice")) or preco
-                elif preco is None:
-                    preco = preco_float(of.get("price") or of.get("lowPrice"))
+                elif a in ("outofstock", "soldout", "discontinued") and disp is not True:
+                    disp = False
+                    preco = preco or preco_float(of.get("price"))
             titulo = no.get("name") or ""
-            if titulo:
+            if titulo and disp is not None:
                 saida.append(Oferta(loja, titulo, no.get("url") and _abs(urlparse(url).netloc, no["url"]) or url,
                                     disp, _imagem(no), preco))
     if saida:
@@ -356,17 +358,50 @@ def ofertas_de_pagina(loja: str, url: str, html: str) -> list[Oferta]:
     # sem JSON-LD: tenta meta tags (Open Graph / Facebook catalog)
     titulo = _meta(html, "og:title")
     disp_meta = (_meta(html, "product:availability") or _meta(html, "og:availability") or "").lower()
-    if titulo and disp_meta:
+    if titulo and disp_meta.replace(" ", "") in ("instock", "available", "outofstock", "soldout"):
         return [Oferta(loja, titulo, url, disp_meta.replace(" ", "") in ("instock", "available", "in stock"),
                        _meta(html, "og:image"),
                        preco_float(_meta(html, "product:price:amount") or _meta(html, "og:price:amount")))]
     return []
 
 
+@cache
+def _hosts_links() -> frozenset[str]:
+    from .main import carregar_config
+    cfg = carregar_config()
+    hosts = set(cfg["hosts_links"])
+    for loja in cfg["lojas"]:
+        dominio = loja["dominio"]
+        hosts.update((dominio, dominio.removeprefix("www.")))
+    return frozenset(hosts)
+
+
+def _pagina_cadastrada(url: str) -> tuple[str, str]:
+    for _ in range(5):
+        partes = urlparse(url)
+        if (partes.scheme != "https" or partes.hostname not in _hosts_links()
+                or partes.username is not None or partes.password is not None or partes.port not in (None, 443)):
+            raise LojaBloqueada("Domínio ou endereço de link pendente de aprovação")
+        with sessao().get(url, allow_redirects=False, timeout=12, stream=True) as resposta:
+            if resposta.is_redirect:
+                url = urljoin(url, resposta.headers["Location"])
+                continue
+            if resposta.status_code != 200:
+                raise LojaBloqueada(f"{partes.hostname}: HTTP {resposta.status_code}")
+            dados = bytearray()
+            for bloco in resposta.iter_content(65536):
+                dados.extend(bloco)
+                if len(dados) > 5_000_000:
+                    raise LojaBloqueada("Página acima do limite de leitura")
+            return url, dados.decode(resposta.encoding or "utf-8", errors="replace")
+    raise LojaBloqueada("Limite de redirecionamentos")
+
+
 def verificar_link(loja: str, url: str) -> list[Oferta]:
-    html = _get(url)
-    if not html:
-        return []
+    url, html = _pagina_cadastrada(url)
+    if loja == "MAC Cosmetics":
+        from .lojas_navegador import ler_produto
+        return ler_produto(loja, "MAC", url, html)
     return ofertas_de_pagina(loja, url, html)
 
 
@@ -374,9 +409,7 @@ def verificar_link(loja: str, url: str) -> list[Oferta]:
 # TikTok Shop (experimental): lê os dados embutidos na página do produto
 # ---------------------------------------------------------------------------
 def verificar_tiktok(loja: str, url: str) -> list[Oferta]:
-    html = _get(url, mobile=True)
-    if not html:
-        return []
+    url, html = _pagina_cadastrada(url)
     baixo = html.lower()
     if ("captcha" in baixo or "verify" in baixo) and "product" not in baixo:
         raise LojaBloqueada("TikTok pediu verificação")

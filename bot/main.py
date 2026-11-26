@@ -114,9 +114,8 @@ def main(argv=None) -> int:
     else:
         url, chave = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
         if not (url and chave):
-            # sem configuração ainda: sai sem erro para o GitHub não mandar e-mail de falha a cada 5 min
             print("⚠️  Bot ainda não configurado: faltam os Secrets SUPABASE_URL e SUPABASE_SERVICE_KEY. Veja o README.")
-            return 0
+            return 2
         db = SupabaseDB(url, chave)
 
     if args.modo == "manuais":
@@ -157,9 +156,9 @@ def main(argv=None) -> int:
 
     if args.modo == "navegador":
         from . import lojas_navegador as N
-        n = N.atualizar(db, cfg, chrome=args.chrome or True, so_loja=args.loja)
+        n = N.atualizar(db, cfg, chrome=args.chrome, so_loja=args.loja, seco=args.seco)
         print(f"\n✅ {n} ofertas lidas pelo navegador.")
-        return 0
+        return 0 if n else 1
 
     if args.modo == "tiktok_catalogo":
         from . import tiktok_catalogo as T
@@ -169,6 +168,7 @@ def main(argv=None) -> int:
             for l in linhas[:30]:
                 print(f"  {'✅' if l['disponivel'] else '❌'} {l['categoria']:<18} {str(l['marca'] or '-'):<18} "
                       f"{l['preco'] or '':>8}  {l['produto'][:70]}")
+            return 0 if linhas and completo else 1
         else:
             n = T.atualizar(db, cfg, chrome=args.chrome)
             if args.chrome and not args.sem_abrir_site:
@@ -176,7 +176,7 @@ def main(argv=None) -> int:
                 site = os.getenv("SITE_URL") or "https://voltou-lilac.vercel.app"
                 print(f"\n✅ {n} produtos do TikTok Shop atualizados. Abrindo o site: {site}")
                 webbrowser.open(site.rstrip("/") + "/#catalogo")
-        return 0
+        return 0 if n else 1
 
     if args.modo == "catalogo":
         from .catalogo import atualizar_catalogo
@@ -185,7 +185,7 @@ def main(argv=None) -> int:
         else:
             atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo, salvar_vitrine=db.salvar_vitrine,
                                limpar_vitrine=db.limpar_vitrine,
-                               extras_vitrine=lambda: [r for nome in ["TikTok Shop"] + [
+                               extras_vitrine=lambda: [r for nome in ["TikTok Shop", "Magalu", "Mercado Livre"] + [
                                    l["nome"] for l in (cfg.get("lojas_navegador") or {}).get("lojas") or []]
                                    for r in db.catalogo_completo_da_loja(nome)])
         return 0

@@ -190,7 +190,11 @@ def _checar_bloqueio(page):
 
 
 def _abrir(page, url):
-    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    resposta = page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    if resposta and resposta.status in (401, 403, 429):
+        raise Bloqueado(f"HTTP {resposta.status}")
+    if resposta and resposta.status >= 400:
+        raise RuntimeError(f"HTTP {resposta.status}")
     try:
         page.wait_for_load_state("networkidle", timeout=15000)
     except Exception:  # noqa: BLE001
@@ -228,13 +232,11 @@ def _abrir_navegador(pw, chrome: bool):
         perfil = os.path.join(os.path.expanduser("~"), ".voltou-robo-chrome")
         ctx = pw.chromium.launch_persistent_context(
             perfil, channel="chrome", headless=False, locale="pt-BR", timezone_id="America/Sao_Paulo",
-            viewport=None, args=["--start-maximized", "--disable-blink-features=AutomationControlled"])
+            viewport=None, args=["--start-maximized"])
         return ctx, ctx
-    browser = pw.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+    browser = pw.chromium.launch(headless=True)
     ctx = browser.new_context(
-        locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1440, "height": 900},
-        user_agent=("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"))
+        locale="pt-BR", timezone_id="America/Sao_Paulo", viewport={"width": 1440, "height": 900})
     return browser, ctx
 
 
@@ -265,7 +267,10 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
                     raise
                 except Exception as e:  # noqa: BLE001
                     log.warning("TikTok %s: %s", slug, e)
+                    completo = False
                     continue
+                if not cards:
+                    completo = False
                 novos = 0
                 for c in cards:
                     o = card_para_oferta(c, marcas)
@@ -310,7 +315,7 @@ def _avisar_problema(cfg: dict, motivo: str, n: int, chrome: bool):
              f"Motivo: {motivo}\nProdutos coletados: {n}\n\n"
              "O que fazer:\n"
              "1. Veja o log da execução (GitHub → Actions → \"TikTok Shop (2x por dia)\").\n"
-             "2. Se o motivo for verificação/CAPTCHA, rode o robô do PC: robo-tiktok\\rodar.bat.\n"
+             "2. Em caso de bloqueio, aguarde a próxima rodada automática.\n"
              "3. Se aparecer 0 produtos sem bloqueio, o TikTok provavelmente mudou o site: "
              "é hora de fazer uma nova versão do bot (bot/tiktok_catalogo.py).\n\n"
              f"Mínimo esperado por rodada: {conf.get('minimo_produtos', 100)} produtos.")
@@ -325,7 +330,7 @@ def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = Fa
     from .catalogo import montar_vitrine
 
     conf = cfg.get("tiktok_catalogo") or {}
-    tentativas = max(1, int(conf.get("tentativas", 2)))
+    tentativas = max(1, int(conf.get("tentativas", 2))) if chrome else 1
     espera = float(conf.get("espera_entre_tentativas_min", 10)) * 60
     minimo = int(conf.get("minimo_produtos", 100))
 
@@ -354,8 +359,7 @@ def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = Fa
 
     antigos = db.catalogo_da_loja(LOJA)
     grupos = {l["grupo"] for l in linhas} | {r["grupo"] for r in antigos}
-    if completo:
-        db.apagar_catalogo_da_loja(LOJA)  # some do site o que saiu do TikTok
+    # A coleta por categorias é limitada. Ausência na listagem não comprova remoção.
     db.salvar_catalogo(linhas)
 
     vit = montar_vitrine(db.catalogo_por_grupos(sorted(grupos)), agora)
@@ -365,11 +369,13 @@ def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = Fa
         db.apagar_vitrine(g)
 
     db.salvar_lojas([{"nome": LOJA, "dominio": "shop.tiktok.com", "tipo": "catálogo + links",
-                      "frequencia": "2x por dia", "ok": completo, "atualizado_em": agora.isoformat()}])
+                      "frequencia": "2x por dia", "ok": completo and len(linhas) >= minimo, "atualizado_em": agora.isoformat()}])
     log.info("TikTok: %d itens salvos, vitrine com %d produtos atualizada%s", len(linhas), len(vit),
              "" if completo else " (coleta parcial por bloqueio)")
     if not completo:
         _avisar_problema(cfg, "coleta parcial (o TikTok pediu verificação no meio)", len(linhas), chrome)
     elif len(linhas) < minimo:
         _avisar_problema(cfg, f"poucos produtos ({len(linhas)})", len(linhas), chrome)
+    if not chrome and (not completo or len(linhas) < minimo):
+        raise RuntimeError(f"TikTok: coleta incompleta ({len(linhas)} ofertas)")
     return len(linhas)

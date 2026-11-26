@@ -361,8 +361,12 @@ def test_tiktok_tenta_de_novo_e_avisa(monkeypatch):
         lojas = []
         def salvar_lojas(self, l): self.lojas += l
     db = DB()
-    assert T.atualizar(db, {"tiktok_catalogo": {"tentativas": 3}}) == 0
-    assert len(chamadas) == 3 and len(avisos) == 1 and db.lojas[-1]["ok"] is False
+    cfg = {"tiktok_catalogo": {"tentativas": 3}}
+    assert T.atualizar(db, cfg) == 0
+    assert len(chamadas) == 1 and len(avisos) == 1 and db.lojas[-1]["ok"] is False
+    chamadas.clear()
+    assert T.atualizar(db, cfg, chrome=True) == 0
+    assert len(chamadas) == 3
 
 
 def test_relatorio_saude():
