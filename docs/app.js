@@ -280,7 +280,8 @@ async function abrirComparacao(g, cat, corEscolhida) {
   const oficial = oficialDe(ref.marca);
 
   const oficialDoProduto = oficial && !porLoja.has(oficial.loja)
-    && (g.ofertasDoGrupo || base).find(r => r.loja === oficial.loja && linkProduto(r.url));
+    && ((g.ofertasDoGrupo || base).find(r => r.loja === oficial.loja && linkProduto(r.url))?.url
+      || oficial.produtos?.[ref.grupo]);
   const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
   alvo().innerHTML = `<div class="painel">
@@ -298,13 +299,13 @@ async function abrirComparacao(g, cat, corEscolhida) {
         <div class="lojas-lista">${lista.map(r => `
           <div class="linha-loja${r.disponivel ? " disp" : ""}">
             ${logoLoja(r.loja)}
-            <div style="min-width:0"><div class="ln">${esc(r.loja)}${oficial && r.loja === oficial.loja ? SELO_OFICIAL : ""}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${!r.cor && temCores ? "Várias cores · escolha a sua na loja" : esc(r.titulo)}</div></div>
+            <div style="min-width:0"><div class="ln">${esc(r.loja)}${oficial && r.loja === oficial.loja ? SELO_OFICIAL : ""}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${!r.cor && temCores ? "Várias cores · escolha a sua na loja" : esc(r.titulo)}</div>${r.atualizado_em ? `<small>Conferido ${tempo(r.atualizado_em)}</small>` : ""}</div>
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.loja === oficial?.loja ? r.url : urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">${r.disponivel ? "Comprar" : "Ver produto"}</a>` : "<small>Link do item pendente</small>"}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
-          ${oficialDoProduto ? `<div class="linha-loja oficial">${logoLoja(oficial.loja)}
+          ${linkProduto(oficialDoProduto) ? `<div class="linha-loja oficial">${logoLoja(oficial.loja)}
             <div><div class="ln">${esc(oficial.loja)} ${SELO_OFICIAL}</div><div class="lt">Escolha a cor na página do produto</div></div>
-            <div></div><a class="btn btn-linha btn-sm" href="${esc(oficialDoProduto.url)}" target="_blank" rel="noopener">Ver produto</a></div>` : ""}
+            <div></div><a class="btn btn-linha btn-sm" href="${esc(oficialDoProduto)}" target="_blank" rel="noopener">Ver produto</a></div>` : ""}
           </div>
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
