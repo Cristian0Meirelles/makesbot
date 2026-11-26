@@ -183,7 +183,7 @@ def montar_vitrine(linhas: list[dict], agora: dt.datetime) -> list[dict]:
 
 
 def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = None,
-                       salvar_vitrine=None, limpar_vitrine=None) -> int:
+                       salvar_vitrine=None, limpar_vitrine=None, extras_vitrine=None) -> int:
     agora = agora or dt.datetime.now(dt.timezone.utc)
     lojas = [l for l in cfg.get("lojas", []) if l.get("ativo", True)]
     total = 0
@@ -222,6 +222,14 @@ def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = No
         total += len(man)
         log.info("Ofertas manuais: %d", len(man))
     limpar(agora - LIMPAR_APOS)
+    # itens que outro robô mantém (ex.: catálogo do TikTok Shop, 2x por dia) entram na vitrine também
+    if extras_vitrine:
+        try:
+            extras = extras_vitrine() or []
+            todas.extend(extras)
+            log.info("Itens de outros robôs na vitrine: %d", len(extras))
+        except Exception as e:  # noqa: BLE001
+            log.warning("Não li os itens extras da vitrine: %s", e)
     if salvar_vitrine:
         vit = montar_vitrine(todas, agora)
         salvar_vitrine(vit)

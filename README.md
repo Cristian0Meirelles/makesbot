@@ -7,7 +7,7 @@ Site + bot que fica de olho nas lojas 24h e avisa por **e-mail** e **WhatsApp** 
 | O que roda | Quando |
 |---|---|
 | Radar de estoque: todas as lojas + links colados | a cada 5 min |
-| Links do TikTok Shop | 2x por dia (09h e 21h) |
+| Links do TikTok Shop + catálogo de maquiagem de todas as lojas do TikTok Shop | 2x por dia (09h e 21h) |
 | Catálogo do autocompletar (pega lançamentos sozinho) | 1x por dia (04h) |
 | Religar agendamentos (o GitHub desliga após 60 dias parado) | toda semana |
 
@@ -117,7 +117,7 @@ Rodar no seu PC (opcional): `pip install -r requirements.txt` e depois `python -
 - **Lojas que funcionam na busca automática** (teste de 25/11/2026): Época Cosméticos, Amo Beleza, Pague Menos, Lojas Americanas, Océane, Mari Maria Makeup, Dailus, Catharine Hill e Hinode.
 - **Sephora, Beleza na Web, MAC, Boticário, QDB, Natura, Vult e outras bloqueiam robôs** (respondem 403 para servidores). O bot respeita o bloqueio e não tenta burlar. O caminho certo para elas é o **feed de produtos do programa de afiliados** (Awin, Lomadee etc.), que traz preço e estoque de forma oficial, e você ainda ganha a comissão. Dá pra plugar depois.
 - **Mercado Livre** não entrega a página de busca para servidores. A forma oficial é a API do Mercado Livre com um app de desenvolvedor (grátis); dá pra adicionar depois.
-- **TikTok Shop** bloqueia robôs com frequência. Por isso só checamos 2x por dia e só por link colado. Se bloquear, aparece no log e o estado não muda (ninguém recebe aviso falso).
+- **TikTok Shop** bloqueia robôs com frequência. Por isso só checamos 2x por dia. Além dos links colados, o bot abre as categorias de maquiagem do TikTok Shop num navegador (`bot/tiktok_catalogo.py`, configurado em `tiktok_catalogo` no `config/lojas.yaml`) e põe no catálogo os produtos de todas as lojas que aparecem lá. O site do TikTok mostra no máximo ~100 produtos por categoria, então não é tudo. Se aparecer a verificação (CAPTCHA), o bot para, guarda o que já pegou e não tenta burlar; o estado não muda (ninguém recebe aviso falso).
 - **Sites de marca** que não são VTEX/Shopify (o teste mostra ❌) só são monitorados pelos **links** que as pessoas colam. Funciona com qualquer página de produto que publique os dados padrão de produto (a maioria publica).
 - **Amazon** bloqueia robôs; cole o link e o bot tenta, mas pode não funcionar.
 - O bot nunca compra nada: ele manda o link, e a pessoa compra.

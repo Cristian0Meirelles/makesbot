@@ -84,9 +84,20 @@ class SupabaseDB:
 
     def catalogo_por_grupos(self, grupos: list[str]) -> list[dict]:
         saida = []
-        for g in grupos:
-            saida += self._req("GET", "catalogo", params={"grupo": f"eq.{g}", "select": "*", "limit": "2000"}) or []
+        for i in range(0, len(grupos), 40):
+            lote = ",".join('"' + g.replace("\\", "\\\\").replace('"', '\\"') + '"' for g in grupos[i:i + 40])
+            saida += self._req("GET", "catalogo", params={"grupo": f"in.({lote})", "select": "*", "limit": "10000"}) or []
         return saida
+
+    def catalogo_completo_da_loja(self, loja: str) -> list[dict]:
+        saida, inicio = [], 0
+        while True:
+            parte = self._req("GET", "catalogo", params={"loja": f"eq.{loja}", "select": "*"},
+                              headers={"Range": f"{inicio}-{inicio + 999}"}) or []
+            saida += parte
+            if len(parte) < 1000:
+                return saida
+            inicio += 1000
 
     def lojas_curadoria(self) -> list[str]:
         return [l["nome"] for l in self._req("GET", "lojas", params={"tipo": "eq.curadoria", "select": "nome"}) or []]

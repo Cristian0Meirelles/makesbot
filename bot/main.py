@@ -2,6 +2,7 @@
 Uso:
   python -m bot.main rapido            # todas as lojas + links (menos TikTok) — roda a cada 5 min
   python -m bot.main tiktok            # só links do TikTok Shop — roda 2x por dia
+  python -m bot.main tiktok_catalogo   # catálogo de maquiagem de todas as lojas do TikTok Shop — 2x por dia
   python -m bot.main feeds             # feeds oficiais de afiliados (Awin) — 1x por hora
   python -m bot.main catalogo          # atualiza o catálogo do autocompletar — 1x por dia
   python -m bot.main testar            # mostra quais lojas estão respondendo
@@ -88,7 +89,7 @@ def testar(cfg: dict, args) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "testar"], nargs="?", default="rapido")
+    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "tiktok_catalogo", "testar"], nargs="?", default="rapido")
     ap.add_argument("--seco", action="store_true")
     ap.add_argument("--email")
     ap.add_argument("--whatsapp")
@@ -138,9 +139,21 @@ def main(argv=None) -> int:
             for loja in antigas - lojas_novas:
                 db.apagar_loja(loja)
             if linhas:
-                db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n == "TikTok Shop" else None,
+                db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n.startswith("TikTok Shop") else None,
                                   "tipo": "curadoria", "frequencia": "ofertas selecionadas", "ok": True,
                                   "atualizado_em": agora.isoformat()} for n in sorted(lojas_novas)])
+        return 0
+
+    if args.modo == "tiktok_catalogo":
+        from . import tiktok_catalogo as T
+        if args.seco:
+            linhas, completo = T.coletar(cfg)
+            print(f"{len(linhas)} produtos ({'completo' if completo else 'parcial: TikTok bloqueou'})")
+            for l in linhas[:30]:
+                print(f"  {'✅' if l['disponivel'] else '❌'} {l['categoria']:<18} {str(l['marca'] or '-'):<18} "
+                      f"{l['preco'] or '':>8}  {l['produto'][:70]}")
+        else:
+            T.atualizar(db, cfg)
         return 0
 
     if args.modo == "catalogo":
@@ -149,7 +162,8 @@ def main(argv=None) -> int:
             atualizar_catalogo(cfg, lambda l: print(f"  {len(l)} itens, ex.: {l[0]['titulo']}"), lambda d: None)
         else:
             atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo, salvar_vitrine=db.salvar_vitrine,
-                               limpar_vitrine=db.limpar_vitrine)
+                               limpar_vitrine=db.limpar_vitrine,
+                               extras_vitrine=lambda: db.catalogo_completo_da_loja("TikTok Shop"))
         return 0
 
     motor = Motor(db, cfg, Notificador(seco=args.seco))

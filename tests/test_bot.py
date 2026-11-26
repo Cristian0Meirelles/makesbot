@@ -285,7 +285,7 @@ def test_ofertas_manuais(tmp_path, monkeypatch):
 """, encoding="utf-8")
     monkeypatch.setattr(manuais, "ARQUIVO", arq)
     of = manuais.carregar({})
-    assert len(of) == 1 and of[0][0].loja == "TikTok Shop" and of[0][0].preco == 89.9 and of[0][1] == "Blush"
+    assert len(of) == 1 and of[0][0].loja == "TikTok Shop (seleção)" and of[0][0].preco == 89.9 and of[0][1] == "Blush"
     # aviso para quem espera
     produto = {"id": "p1", "categoria": "Blush", "marca": "MAC", "nome": "Powder Blush", "cor": "Film Noir", "links": [],
                "ativo": True, "disponivel": False, "inscricoes": [{"id": "i1", "email": "a@b.com", "token": "t", "ativo": True}]}
@@ -309,3 +309,42 @@ def test_lapis_de_boca_nao_e_contorno():
     for nome in ["Lápis de Contorno Labial MAC Ruby Woo", "Lip Pencil MAC Ruby Woo", "Delineador Labial Vult"]:
         assert categoria_de(Oferta("L", "x", "u", True, extra={"produto": nome, "categorias": ""}), None) == "Lápis labial", nome
     assert categoria_de(Oferta("L", "x", "u", True, extra={"produto": "Paleta de Contorno Facial", "categorias": ""}), None) == "Contorno"
+
+
+# ---------------------------------------------------------------- catálogo do TikTok Shop
+def test_tiktok_card_e_marca():
+    from bot import tiktok_catalogo as T
+    marcas = T._lista_marcas()
+    card = {"link": "https://shop.tiktok.com/br/pdp/batom-mac-hidratante/1736022415213954921?x=1",
+            "titulo": "Batom MAC Hidratante Brilhante Lustreglass Sheer-Shine",
+            "texto": "Batom MAC Hidratante Brilhante Lustreglass Sheer-Shine\n4.9\n8.5K vendido\nDeal\n-36%R$88,80R$139,00",
+            "imagem": "https://img/x.webp"}
+    o = T.card_para_oferta(card, marcas)
+    assert o.extra["marca"] == "MAC" and o.preco == 88.8 and o.extra["preco_de"] == 139.0
+    assert o.url.endswith("/1736022415213954921") and o.disponivel
+    assert T.marca_do_titulo("Kit Gloss Labial Sarah’s Beauty – Brilho", marcas) in ("Sarah's Beauty", "Sarahs Beauty")
+    assert T.marca_do_titulo("Gel Para Sobrancelhas Ruby Rose Brow", marcas) == "Ruby Rose"
+    assert T.marca_do_titulo("M·A·C Ruby Woo", marcas) == "MAC"
+    assert T.marca_do_titulo("Base Macrilan Matte", marcas) == "Macrilan"
+    assert T.marca_do_titulo("Pó compacto maquiagem natural", marcas) is None
+    esg = T.card_para_oferta(dict(card, texto=card["texto"] + "\nEsgotado"), marcas)
+    assert not esg.disponivel
+
+
+def test_tiktok_pagina_produto_e_linhas():
+    import datetime as dt
+    from bot import tiktok_catalogo as T
+    txt = ("TikTok Shop\nBatom MAC\nVendido por MAC\n-36%\nR$\n88\n.80\nCor:\nAlone Time\nComprar agora\n"
+           "Sobre este produto\nDetalhes\nMarca MAC\nAvaliações\nachei que estava esgotado mas chegou")
+    info = T.ler_pagina_produto(txt)
+    assert info == {"marca": "MAC", "vendedor": "MAC", "disponivel": True}
+    assert T.ler_pagina_produto("Vendido por X\nEsgotado\nSobre este produto")["disponivel"] is False
+    marcas = T._lista_marcas()
+    cards = [
+        {"link": "https://shop.tiktok.com/br/pdp/a/1", "titulo": "Blush Compacto Ruby Rose", "texto": "R$19,90"},
+        {"link": "https://shop.tiktok.com/br/pdp/b/2", "titulo": "Kit Pincel de Maquiagem 12 peças", "texto": "R$29,90"},
+    ]
+    ofs = [(T.card_para_oferta(c, marcas), None) for c in cards]
+    linhas = T.montar_linhas(ofs, dt.datetime(2026, 11, 26, tzinfo=dt.timezone.utc))
+    assert len(linhas) == 1 and linhas[0]["categoria"] == "Blush" and linhas[0]["loja"] == "TikTok Shop"
+    assert linhas[0]["marca"] == "Ruby Rose" and linhas[0]["preco"] == 19.9

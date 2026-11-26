@@ -244,3 +244,32 @@ afiliados_por_dominio:
   mercadolivre.com.br: "{url}?matt_word=cotrinmeirellescristiano&matt_tool=76580280"
   amazon.com.br: ""
   shop.tiktok.com: ""
+
+# =====================================================================
+#  Catálogo do TikTok Shop (todas as lojas/vendedores de maquiagem)
+# ---------------------------------------------------------------------
+#  Roda 2x por dia junto com a Action "TikTok Shop". O bot abre cada
+#  categoria abaixo, clica em "Ver mais" até acabar e guarda os produtos.
+#  Cada categoria mostra no máximo ~100 produtos por vez no site.
+#  categoria: categoria do site (vazio = descobre pelo nome do produto)
+# =====================================================================
+tiktok_catalogo:
+  max_cliques_ver_mais: 15
+  espera_entre_cliques_seg: 2.0
+  detalhar_max: 40          # produtos sem marca reconhecida que ele abre pra ler a marca
+  marcas_extra: []          # marcas que ele ainda não reconhece pelo nome, ex.: [Minha Marca]
+  categorias:
+    lipstick-lip-gloss/601534: Batom
+    eyeliner-lipliner/601587: Delineador
+    eyebrow-products/601586: Sobrancelha
+    eyeshadow/601588: Sombra
+    concealer-foundation/601554: Base
+    mascara/601585: Máscara de cílios
+    powder/601558: Pó
+    blush/601560: Blush
+    bb-cc-creams/601550: Base
+    bronzer-highlighter/601555: Iluminador
+    makeup-base-and-primers/601556: Primer
+    makeup-fixing-spray/601552: Fixador
+    makeup-sets/601529:
+    makeup/848648:
