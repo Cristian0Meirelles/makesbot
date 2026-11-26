@@ -90,5 +90,5 @@ def baixar_awin(urls: str | None = None) -> list[Oferta]:
             log.info("Feed Awin: %d produtos", len(of))
             todas.extend(of)
         except Exception as e:  # noqa: BLE001
-            log.warning("Feed Awin falhou: %s", e)
+            log.warning("Feed Awin falhou (%s)", type(e).__name__)
     return todas

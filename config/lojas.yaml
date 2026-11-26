@@ -253,6 +253,17 @@ afiliados_por_dominio:
 #  Cada categoria mostra no máximo ~100 produtos por vez no site.
 #  categoria: categoria do site (vazio = descobre pelo nome do produto)
 # =====================================================================
+hosts_links:
+  - www.mercadolivre.com.br
+  - mercadolivre.com.br
+  - produto.mercadolivre.com.br
+  - www.tiktok.com
+  - shop.tiktok.com
+  - vm.tiktok.com
+  - vt.tiktok.com
+  - www.amazon.com.br
+  - amazon.com.br
+
 tiktok_catalogo:
   max_cliques_ver_mais: 15
   espera_entre_cliques_seg: 2.0

@@ -156,7 +156,7 @@ create or replace function public.criar_alerta(
   p_foto_url text, p_link text,
   p_pessoa text, p_email text, p_whatsapp text, p_callmebot text
 ) returns json
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_chave text;
   v_prod  uuid;
@@ -164,7 +164,7 @@ declare
   v_wpp   text := nullif(regexp_replace(coalesce(p_whatsapp,''), '[^0-9]', '', 'g'), '');
   v_key   text := nullif(trim(coalesce(p_callmebot,'')), '');
   v_link  text := nullif(trim(coalesce(p_link,'')), '');
-  v_token uuid;
+
 begin
   if coalesce(trim(p_marca),'') = '' or coalesce(trim(p_nome),'') = '' then
     raise exception 'Informe a marca e o nome do produto.';
@@ -205,23 +205,15 @@ begin
                     else produtos.links || v_link end
   returning id into v_prod;
 
-  select token into v_token from inscricoes
-   where produto_id = v_prod and ativo
-     and ((v_email is not null and email = v_email) or (v_wpp is not null and whatsapp = v_wpp))
-   limit 1;
-
-  if v_token is null then
+  -- O cadastro público nunca altera uma inscrição existente.
+  if not exists (
+    select 1 from inscricoes where produto_id = v_prod and ativo
+    and ((v_email is not null and email = v_email) or (v_wpp is not null and whatsapp = v_wpp))
+  ) then
     insert into inscricoes (produto_id, nome, email, whatsapp, callmebot_key)
-    values (v_prod, nullif(trim(coalesce(p_pessoa,'')),''), v_email, v_wpp, v_key)
-    returning token into v_token;
-  else
-    update inscricoes set callmebot_key = coalesce(v_key, callmebot_key),
-                          email = coalesce(v_email, email),
-                          whatsapp = coalesce(v_wpp, whatsapp)
-     where token = v_token;
+    values (v_prod, nullif(trim(coalesce(p_pessoa,'')),''), v_email, v_wpp, v_key);
   end if;
-
-  return json_build_object('produto_id', v_prod, 'token', v_token);
+  return json_build_object('produto_id', v_prod);
 end $$;
 
 create or replace function public.cancelar_alerta(p_token uuid) returns boolean

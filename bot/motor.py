@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 from . import lojas as L
 from .catalogo import linha_catalogo
 from .matcher import combina
-from .util import Oferta, normalizar, tokens, url_codificada
+from .util import Oferta, normalizar, url_codificada
 
 log = logging.getLogger("motor")
 
@@ -152,13 +152,15 @@ class Motor:
                 yield p, nome, (lambda fn=fn, nome=nome, link=link, p=p: self._filtrar_link(p, fn(nome, link)))
 
     def _filtrar_link(self, produto: dict, ofertas: list[Oferta]) -> list[Oferta]:
-        """Link colado pela pessoa: confia no link, mas se a página tiver várias cores, filtra pela cor."""
-        cor = tokens(produto.get("cor"))
-        if cor and len(ofertas) > 1:
-            com_cor = [o for o in ofertas if all(c in tokens(o.titulo) for c in cor)]
-            if com_cor:
-                return com_cor
-        return ofertas
+        """Uma leitura inconclusiva preserva a última confirmação desta loja."""
+        confirmadas = []
+        for oferta in ofertas:
+            loja = next((l for l in self.cfg.get("lojas", []) if l["nome"] == oferta.loja), {})
+            if combina(produto, oferta.titulo, self._loja_da_marca(loja, produto)):
+                confirmadas.append(oferta)
+        if not confirmadas:
+            raise L.LojaBloqueada("Produto, cor ou estoque sem confirmação no link")
+        return confirmadas
 
     # ------------------------------------------------------------------ execução
     def rodar(self, modo: str = "rapido") -> dict:
