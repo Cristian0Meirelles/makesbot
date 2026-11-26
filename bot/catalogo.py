@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -76,6 +77,8 @@ def linha_catalogo(o: Oferta, categoria: str, agora: dt.datetime, afiliado: str)
         marca = None
     produto = (o.extra.get("produto") or o.titulo).strip()
     cor = (o.extra.get("cor") or "").strip() or None
+    if cor and re.fullmatch(r"(\d+([.,]\d+)?\s*(un|und|unid|unidades?|ml|g|gr|kg|oz)?|[uú]nic[oa]|padr[aã]o|u|default( title)?|sem cor)", cor, re.I):
+        cor = None
     url_af = afiliado.replace("{url_enc}", url_codificada(o.url)).replace("{url}", o.url) if afiliado else None
     return {
         "loja": o.loja, "marca": marca, "produto": produto[:200], "cor": cor and cor[:120],

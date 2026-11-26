@@ -292,3 +292,13 @@ def test_ofertas_manuais(tmp_path, monkeypatch):
     db = MemDB([produto]); n = Notificador(seco=True)
     Motor(db, {"lojas": []}, n, trabalhadores=1).rodar("rapido")
     assert len(n.enviados) == 1 and "TikTok Shop" in n.enviados[0]["texto"]
+
+
+def test_cor_falsa_vira_nada():
+    from bot.catalogo import linha_catalogo
+    t = dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc)
+    for c in ["1 Un", "Única", "30ml", "Padrão"]:
+        l = linha_catalogo(Oferta("L", "x", "u", True, extra={"marca": "Vult", "produto": "Pó Duo", "cor": c}), "Blush", t, "")
+        assert l["cor"] is None, c
+    l = linha_catalogo(Oferta("L", "x", "u", True, extra={"marca": "MAC", "produto": "Batom", "cor": "Ruby Woo"}), "Batom", t, "")
+    assert l["cor"] == "Ruby Woo"
