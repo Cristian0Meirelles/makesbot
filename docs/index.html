@@ -817,7 +817,9 @@ async function abrirComparacao(g, cat, corEscolhida) {
   } catch (e) { console.warn(e); }
 
   const cores = new Map();
+  const temCores = todas.some(r => r.cor);
   for (const r of todas) {
+    if (!r.cor && temCores) continue;          // loja sem cor (ex.: TikTok): aparece em todas as cores
     const k = norm(r.cor) || "_";
     const c = cores.get(k) || {nome: r.cor || "Única", img: null, disp: false, tom: r.tom || ""};
     c.img ||= r.imagem; c.disp ||= r.disponivel; cores.set(k, c);
@@ -825,10 +827,11 @@ async function abrirComparacao(g, cat, corEscolhida) {
   const tons = [...new Set([...cores.values()].map(c => c.tom).filter(Boolean))].sort();
   let corAtual = corEscolhida ?? (g.tipo === "cor" ? norm(g.rotulo) : null);
   if (!corAtual || !cores.has(corAtual)) {   // começa na cor mais barata disponível
-    const melhor = todas.filter(r => r.disponivel && r.preco).sort((a, b) => a.preco - b.preco)[0] || todas[0];
+    const comCor = todas.filter(r => r.cor || !temCores);
+    const melhor = comCor.filter(r => r.disponivel && r.preco).sort((a, b) => a.preco - b.preco)[0] || comCor[0] || todas[0];
     corAtual = norm(melhor.cor) || "_";
   }
-  const linhas = todas.filter(r => (norm(r.cor) || "_") === corAtual);
+  const linhas = todas.filter(r => (norm(r.cor) || "_") === corAtual || (!r.cor && temCores));
   const porLoja = new Map();
   for (const r of linhas) { const a = porLoja.get(r.loja); if (!a || (r.disponivel && !a.disponivel) || (r.disponivel === a.disponivel && (r.preco || 1e9) < (a.preco || 1e9))) porLoja.set(r.loja, r); }
   const lista = [...porLoja.values()].sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
@@ -854,7 +857,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
         <div class="lojas-lista">${lista.map(r => `
           <div class="linha-loja${r.disponivel ? " disp" : ""}">
             ${logoLoja(r.loja)}
-            <div style="min-width:0"><div class="ln">${esc(r.loja)}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${esc(r.titulo)}</div></div>
+            <div style="min-width:0"><div class="ln">${esc(r.loja)}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${!r.cor && temCores ? "Várias cores · escolha a sua na loja" : esc(r.titulo)}</div></div>
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${r.disponivel ? `<a class="btn btn-esc btn-sm" href="${esc(urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">Comprar</a>` : `<a class="btn btn-linha btn-sm" href="${esc(urlSegura(r.url))}" target="_blank" rel="noopener">Ver</a>`}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}</div>
