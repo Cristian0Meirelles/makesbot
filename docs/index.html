@@ -99,6 +99,7 @@ input,select,textarea{font:inherit;color:inherit}
 .card .info .ok{color:var(--verde);font-weight:600}
 .card{cursor:pointer}
 .side-fechar,.side-ver{display:none}
+.cat-fundo{display:none}
 @media (max-width:900px){
   .cat-layout{grid-template-columns:1fr}
   .btn-filtros{display:inline-flex;gap:6px;align-items:center}
@@ -411,7 +412,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   input,select,textarea,.cat-busca input,.fc-busca input,.side-sel,.cat-ordem{font-size:16px!important}
   #fTipos,#fLojas,#fTons{display:grid;grid-template-columns:1fr 1fr;column-gap:6px}
   .opt{font-size:14.5px;padding:8px 4px}
-  .cat-fundo{position:fixed;inset:0;background:rgba(43,26,31,.45);z-index:69;opacity:0;pointer-events:none;transition:opacity .2s}
+  .cat-fundo{display:block;position:fixed;inset:0;background:rgba(43,26,31,.45);z-index:69;opacity:0;pointer-events:none;transition:opacity .2s}
   .cat-fundo.on{opacity:1;pointer-events:auto}
   section.bloco{padding:44px 0}
   .wrap{padding:0 16px}
@@ -562,7 +563,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
       <p id="catResumo">Compare preços e veja onde tem em estoque agora.</p>
     </div>
     <div class="cat-layout">
-      <div class="cat-fundo" id="catFundo"></div>
       <aside class="cat-side" id="catSide" aria-label="Filtros">
         <div class="side-topo"><b>Filtros</b><button class="limpar" id="fLimpar" type="button">Limpar</button><button class="side-fechar" id="sideFechar" aria-label="Fechar filtros">×</button></div>
         <label class="side-switch">Só disponíveis <input type="checkbox" id="fDisp"></label>
@@ -713,6 +713,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
 </footer>
 
 <div class="modal" id="modal"><div class="caixa" id="modalCaixa"></div></div>
+<div class="cat-fundo" id="catFundo"></div>
 <div class="modal grande" id="modalProduto"><div class="caixa"><button class="fechar" id="fecharProduto" aria-label="Fechar">×</button><div id="produtoCorpo"></div></div></div>
 <nav class="nav-baixo" aria-label="Menu">
   <a href="#inicio" data-s="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Buscar</a>
