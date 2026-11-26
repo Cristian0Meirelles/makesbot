@@ -405,7 +405,7 @@ function lerFiltrosDaUrl() {
 function chipsCatalogo() {
   const opt = (g, v, rot, on, radio, extra = "") => `<button type="button" class="opt${radio ? " radio" : ""}${on ? " on" : ""}" data-g="${g}" data-v="${esc(v)}"><span class="cx"></span>${extra}${esc(rot)}</button>`;
   $("#fTipos").innerHTML = opt("tipo", "", "Todos os tipos", !F.tipo, true) + TIPOS.map(t => opt("tipo", t, t, F.tipo === t, true)).join("");
-  $("#fLojas").innerHTML = LOJAS.map(l => l.nome).filter(n => n !== "TikTok Shop").map(n => {
+  $("#fLojas").innerHTML = LOJAS.map(l => l.nome).map(n => {
     const d = dominioDe(n);
     return opt("lojas", n, n, F.lojas.includes(n), false, d ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(d)}&sz=32" alt="" data-remover>` : "");
   }).join("");
@@ -613,7 +613,7 @@ function renderRadar() {
 }
 
 function renderLojas() {
-  $("#lojasGrade").innerHTML = LOJAS.map(l => `<div class="loja-chip">${logoLoja(l.nome)}<div><b>${esc(l.nome)}</b><span>${esc(l.frequencia || "")}</span></div><span class="ok${l.ok !== false ? " on" : ""}" title="${l.ok === false ? "com problema na última checagem" : "funcionando"}"></span></div>`).join("");
+  $("#lojasGrade").innerHTML = LOJAS.map(l => `<div class="loja-chip">${logoLoja(l.nome)}<div><b>${esc(l.nome)}</b><span>${esc(l.frequencia || "Fonte cadastrada")}</span></div><span class="ok${l.ok === true ? " on" : ""}" title="${l.ok === false ? "com problema na última checagem" : l.ok === true ? "funcionando" : "aguardando confirmação"}"></span></div>`).join("");
 }
 
 /* ------------------------------------------------ formulário */
@@ -756,7 +756,13 @@ async function iniciar() {
       const d = await carregarDemo();
       if (d.gerado_em) $("#demoBar").innerHTML = `<b>Prévia:</b> produtos, fotos, preços e estoque reais das lojas, capturados ${esc(tempo(d.gerado_em))}. Alertas ainda não são salvos.`;
     }
-    LOJAS = DEMO ? (DEMO_DADOS.lojas || []) : await api("lojas?select=*&order=nome");
+    const [fontes, atividade] = await Promise.all([
+      fetch("lojas.json").then(r => r.json()).catch(() => []),
+      DEMO ? (DEMO_DADOS.lojas || []) : api("lojas?select=*&order=nome").catch(() => [])
+    ]);
+    const diretorio = new Map(fontes.map(l => [l.nome, l]));
+    for (const l of atividade) diretorio.set(l.nome, {...diretorio.get(l.nome), ...l});
+    LOJAS = [...diretorio.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
     renderLojas();
     iniciarCatalogo();
     await carregarRadar();

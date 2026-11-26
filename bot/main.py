@@ -185,7 +185,7 @@ def main(argv=None) -> int:
         else:
             atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo, salvar_vitrine=db.salvar_vitrine,
                                limpar_vitrine=db.limpar_vitrine,
-                               extras_vitrine=lambda: [r for nome in ["TikTok Shop"] + [
+                               extras_vitrine=lambda: [r for nome in ["TikTok Shop", "Magalu", "Mercado Livre"] + [
                                    l["nome"] for l in (cfg.get("lojas_navegador") or {}).get("lojas") or []]
                                    for r in db.catalogo_completo_da_loja(nome)])
         return 0
