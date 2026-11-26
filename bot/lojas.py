@@ -253,7 +253,23 @@ def buscar_mercadolivre(loja: str, termo: str, somente_oficial: bool = False) ->
         return []
     if "captcha" in html.lower() and "ui-search" not in html:
         raise LojaBloqueada("Mercado Livre pediu captcha")
-    return ofertas_mercadolivre_html(loja, html, somente_oficial)
+    achados = []
+    from .tiktok_catalogo import _lista_marcas, marca_do_titulo
+    marcas = _lista_marcas()
+    for card in ofertas_mercadolivre_html(loja, html, somente_oficial):
+        host = urlparse(card.url).hostname
+        if host not in {"produto.mercadolivre.com.br", "www.mercadolivre.com.br", "mercadolivre.com.br"}:
+            continue
+        if not re.search(r"MLB-?\d+", urlparse(card.url).path, re.I):
+            continue
+        for oferta in verificar_link(loja, card.url):
+            if urlparse(oferta.url).hostname != host or not oferta.preco:
+                continue
+            oferta.extra.setdefault("produto", oferta.titulo)
+            if not oferta.extra.get("marca"):
+                oferta.extra["marca"] = marca_do_titulo(oferta.titulo, marcas)
+            achados.append(oferta)
+    return achados
 
 
 def ofertas_mercadolivre_html(loja: str, html: str, somente_oficial=False) -> list[Oferta]:
@@ -349,7 +365,10 @@ def ofertas_de_pagina(loja: str, url: str, html: str) -> list[Oferta]:
             titulo = no.get("name") or ""
             if titulo and disp is not None:
                 saida.append(Oferta(loja, titulo, no.get("url") and _abs(urlparse(url).netloc, no["url"]) or url,
-                                    disp, _imagem(no), preco))
+                                    disp, _imagem(no), preco,
+                                    extra={"produto": titulo, "cor": no.get("color") if isinstance(no.get("color"), str) else None,
+                                           "marca": (no["brand"].get("name") if isinstance(no.get("brand"), dict)
+                                                     else no.get("brand") if isinstance(no.get("brand"), str) else None)}))
     if saida:
         # página com variações: mantém só as variações se houver
         com_url_propria = [o for o in saida if o.url != url]

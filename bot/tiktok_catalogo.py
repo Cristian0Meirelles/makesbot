@@ -358,9 +358,9 @@ def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = Fa
         return 0
 
     antigos = db.catalogo_da_loja(LOJA)
-    grupos = {l["grupo"] for l in linhas} | {r["grupo"] for r in antigos}
     # A coleta por categorias é limitada. Ausência na listagem não comprova remoção.
     db.salvar_catalogo(linhas)
+    grupos = {l["grupo"] for l in linhas} | {r["grupo"] for r in antigos}
 
     vit = montar_vitrine(db.catalogo_por_grupos(sorted(grupos)), agora)
     if vit:

@@ -70,6 +70,22 @@ class SupabaseDB:
                       headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
 
     def salvar_catalogo(self, linhas: list[dict]):
+        from .classificar import associar_variantes
+        anuncios = defaultdict(list)
+        for linha in linhas:
+            if linha.get("marca") and linha["loja"] in {"TikTok Shop", "Mercado Livre"}:
+                anuncios[linha["marca"]].append(linha)
+        for marca, lote in anuncios.items():
+            referencias = []
+            while True:
+                parte = self._req("GET", "catalogo", params={"marca": "eq." + marca,
+                                  "loja": 'not.in.("TikTok Shop","Mercado Livre")', "cor": "not.is.null",
+                                  "select": "marca,categoria,produto,grupo,cor,familia,tom",
+                                  "order": "id.asc", "offset": len(referencias), "limit": 1000}) or []
+                referencias.extend(parte)
+                if len(parte) < 1000:
+                    break
+            associar_variantes(lote, referencias)
         for i in range(0, len(linhas), 500):
             self._req("POST", "catalogo?on_conflict=loja,url", json=linhas[i:i + 500],
                       headers={"Prefer": "resolution=merge-duplicates,return=minimal"})

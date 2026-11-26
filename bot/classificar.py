@@ -103,3 +103,27 @@ def chave_produto(marca: str | None, produto: str) -> str:
             termos.discard(ingles)
             termos.add(local)
     return f"{normalizar(marca)}|{' '.join(sorted(termos))}"
+
+
+def associar_variantes(anuncios, referencias):
+    """Relaciona um anúncio à variante quando marca, tipo, modelo e cor coincidem."""
+    def assinatura(marca, nome):
+        palavras = normalizar(nome).replace("m a c", "mac").split()
+        return tuple(sorted(set(palavras) - set(normalizar(marca).split()) - {"de", "da", "do", "em", "cor"}))
+
+    indice = {}
+    for ref in referencias:
+        if not ref.get("marca") or not ref.get("cor"):
+            continue
+        nome_cor = ref["produto"] + " " + ref["cor"]
+        chave = (ref["categoria"], assinatura(ref["marca"], nome_cor))
+        variantes = indice.setdefault(chave, {})
+        variantes[(ref["grupo"], normalizar(ref["cor"]))] = ref
+    for anuncio in anuncios:
+        nome = anuncio["produto"] + " " + (anuncio.get("cor") or "")
+        candidatas = indice.get((anuncio["categoria"], assinatura(anuncio["marca"], nome)), {})
+        if len(candidatas) == 1:
+            ref = next(iter(candidatas.values()))
+            for campo in ("produto", "grupo", "cor", "familia", "tom"):
+                anuncio[campo] = ref[campo]
+            anuncio["busca"] = normalizar(f"{anuncio['busca']} {ref['produto']} {ref['cor']}")[:500]

@@ -438,3 +438,13 @@ def test_mesma_ficha_preserva_links_por_loja_e_cor():
     assert (a["grupo"], a["cor"]) == (b["grupo"], b["cor"])
     assert "Film Noir Buff" in a["titulo"]
     assert c["grupo"] == d["grupo"] != a["grupo"]
+
+
+def test_marketplace_associa_apenas_variante_identificada():
+    from bot.classificar import associar_variantes
+    ref = dict(marca="MAC", produto="Batom MACximal Satin", cor="Film Noir", categoria="Batom",
+               grupo="mac|batom macximal satin", familia=None, tom=None)
+    nomes = ["MAC Satin Batom MACximal Film Noir", "Batom MACximal Satin", "Kit Batom MACximal Satin Film Noir"]
+    anuncios = [dict(ref, produto=nome, grupo="separado", cor=None, busca=nome) for nome in nomes]
+    associar_variantes(anuncios, [ref])
+    assert [(r["grupo"], r["cor"]) for r in anuncios] == [(ref["grupo"], "Film Noir"), ("separado", None), ("separado", None)]

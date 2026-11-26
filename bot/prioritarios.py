@@ -95,9 +95,37 @@ def powder_blush(loja):
     return []
 
 
+def batons_beleza():
+    loja = "Beleza na Web"
+    url = "https://www.belezanaweb.com.br/produto/mac-macximal-satin-film-noir-batom-acetinado-35g"
+    _, html = _pagina_cadastrada(url)
+    saida = {}
+    from .lojas import _nos
+    for bruto in _LDJSON.findall(html):
+        try:
+            dados = json.loads(bruto)
+        except ValueError:
+            continue
+        for item in _nos(dados):
+            nome = normalizar(item.get("name")).replace("m a c", "mac")
+            if not {"batom", "mac", "macximal", "satin"}.issubset(nome.split()):
+                continue
+            cor, link = item.get("color"), item.get("url") or ""
+            oferta = item.get("offers")
+            if not cor or not link.startswith("https://www.belezanaweb.com.br/produto/"):
+                continue
+            if not isinstance(oferta, dict) or oferta.get("seller", {}).get("name") != loja:
+                continue
+            for o in ofertas_de_pagina(loja, link, '<script type="application/ld+json">' + json.dumps(item) + '</script>'):
+                o.extra.update(marca="MAC", produto="Batom Satin MAC MACximal", cor=cor, categoria="Batom")
+                saida[o.url] = o
+    return list(saida.values())
+
+
 def atualizar():
     fontes = [
         ("Época Cosméticos", epoca),
+        ("Beleza na Web · batons", batons_beleza),
         *((loja, lambda loja=loja: powder_blush(loja)) for loja in PAGINAS),
         ("MAC Cosmetics", film_noir),
         ("Magalu", lambda: blush_de_anuncio("Magalu",
@@ -122,7 +150,7 @@ def atualizar():
     # Inicialização idempotente. Nunca sobrescreve uma coleta posterior nem renova a data.
     db._req("POST", "catalogo?on_conflict=loja,url", json=anteriores,
             headers={"Prefer": "resolution=ignore-duplicates,return=minimal"})
-    linhas = [linha_catalogo(o, "Blush", agora, "") for o in ofertas]
+    linhas = [linha_catalogo(o, o.extra.get("categoria", "Blush"), agora, "") for o in ofertas]
     db.salvar_catalogo(linhas)
     # Reclassifica também a última leitura quando a loja estiver fora do ar.
     for antigo in anteriores:

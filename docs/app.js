@@ -274,7 +274,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
   let disp = lista.filter(r => r.disponivel); const corNome = cores.get(corAtual)?.nome || "";
   let melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
   const img = lista.find(r => r.imagem)?.imagem || cores.get(corAtual)?.img;
-  const recente = lista.map(r => r.atualizado_em).sort().pop();
+  const pendentes = ["Mercado Livre", "TikTok Shop"].filter(loja => !porLoja.has(loja));
   const nomeProduto = g.nome || ref.produto;
   await carregarOficiais();
   const oficial = oficialDe(ref.marca);
@@ -291,7 +291,7 @@ async function abrirComparacao(g, cat, corEscolhida) {
       <div>
         <div class="marca">${esc(ref.marca || "")} · ${esc(cat)}</div>
         <h2>${esc(nomeProduto)}</h2>
-        <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${esc(corNome)}</b> · ` : ""}${melhorLoja ? `<b>Melhor preço: ${brl(melhorLoja.preco)}</b> na ${esc(melhorLoja.loja)} · ` : ""}${disp.length ? `tem em ${disp.length} de ${lista.length} loja${lista.length > 1 ? "s" : ""}` : "esgotado em todas as lojas que acompanhamos"}</div>
+        <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${esc(corNome)}</b> · ` : ""}${melhorLoja ? `<b>Melhor preço: ${brl(melhorLoja.preco)}</b> na ${esc(melhorLoja.loja)} · ` : ""}${disp.length ? `tem em ${disp.length} de ${lista.length} loja${lista.length > 1 ? "s" : ""}` : "esgotado nas ofertas verificadas"}</div>
         ${cores.size > 1 ? `<div class="cores-titulo">Cores (${cores.size})</div>
           ${tons.length > 1 ? `<div class="tons-filtro">${["", ...tons].map(t => `<button class="chip${t === tomFiltro ? " on" : ""}" data-tom="${esc(t)}">${t ? "Pele " + esc(t).toLowerCase() : "Todos os tons"}</button>`).join("")}</div>` : ""}
           <div class="cores">${coresVisiveis.map(([k, c]) => `
@@ -307,10 +307,11 @@ async function abrirComparacao(g, cat, corEscolhida) {
             <div><div class="ln">${esc(oficial.loja)} ${SELO_OFICIAL}</div><div class="lt">Escolha a cor na página do produto</div></div>
             <div></div><a class="btn btn-linha btn-sm" href="${esc(oficialDoProduto)}" target="_blank" rel="noopener">Ver produto</a></div>` : ""}
           </div>
+        ${pendentes.length ? `<p class="atualizado">${pendentes.join(" e ")} · sem oferta confirmada para ${temCores ? "esta cor" : "este produto"}.</p>` : ""}
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
         </div>
-        <div class="atualizado">Estoque conferido ${tempo(recente)}. Preço e estoque podem mudar na loja.</div>
+        <div class="atualizado">Cada horário indica a última consulta bem-sucedida àquela oferta. O catálogo tem atualização diária.</div>
       </div>
     </div></div>`;
   const raiz = alvo();

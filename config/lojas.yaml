@@ -237,7 +237,7 @@ lojas:
     dominio: lista.mercadolivre.com.br
     tipo: mercadolivre
     somente_oficial: true   # só Loja Oficial (nada de revendedor/tralha)
-    ativo: false
+    ativo: true
     afiliado: "{url}?matt_word=cotrinmeirellescristiano&matt_tool=76580280"
 
 afiliados_por_dominio:

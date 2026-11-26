@@ -123,7 +123,13 @@ def varrer_loja(loja: dict, agora: dt.datetime) -> list[dict]:
                 linhas[o.url] = linha_catalogo(o, categoria_de(o, termo_cat), agora, afiliado)
 
     if tipo == "mercadolivre":
-        return []  # Mercado Livre tem milhões de anúncios: entra só na busca do radar
+        for termo, cat in TERMOS.items():
+            try:
+                guardar(L.buscar_mercadolivre(nome, termo, loja.get("somente_oficial", True)), cat)
+            except (L.LojaBloqueada, requests.RequestException) as erro:
+                log.warning("%s: coleta interrompida em %s (%s)", nome, termo, type(erro).__name__)
+                break
+        return list(linhas.values())
 
     if tipo in ("auto", "shopify"):
         try:
