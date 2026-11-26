@@ -33,6 +33,43 @@ input,select,textarea{font:inherit;color:inherit}
 
 .sem-foto{width:100%;height:100%;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;color:#b9a5aa;background:var(--cinza-bg)}
 .sem-foto span{letter-spacing:.06em}
+
+/* catálogo */
+#catalogo{scroll-margin-top:70px}
+.filtros-cat{background:var(--papel);border:1px solid var(--linha);border-radius:26px;padding:18px 20px;margin-bottom:24px;display:flex;flex-direction:column;gap:14px}
+.fc-linha{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fc-rot{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--suave);min-width:92px}
+.fc-busca{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;border:1.5px solid var(--linha);border-radius:999px;padding:0 14px;background:#fff}
+.fc-busca input{border:0;outline:0;padding:11px 0;width:100%;background:transparent;font-size:15px}
+.fc-sel{border:1.5px solid var(--linha);border-radius:999px;padding:10px 14px;background:#fff;font-size:14px;font-weight:500;max-width:240px}
+.chip{border:1.5px solid var(--linha);background:#fff;border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:500;color:var(--tinta2);display:inline-flex;align-items:center;gap:7px}
+.chip:hover{border-color:var(--rosa)}
+.chip.on{background:var(--tinta);border-color:var(--tinta);color:#fff}
+.chip .sw{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.12)}
+.chip img{width:16px;height:16px;border-radius:4px}
+.chips-rolam{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin;flex:1}
+.chips-rolam .chip{flex:none}
+.fc-rodape{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;color:var(--tinta2)}
+.fc-rodape b{color:var(--tinta)}
+.limpar{background:none;border:0;color:var(--rosa);font-weight:600;padding:0}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--verde)}
+.card .melhor{margin:10px 0 4px;padding:10px 12px;border-radius:14px;background:var(--verde-bg);color:var(--verde);font-size:13px;line-height:1.3}
+.card .melhor b{display:block;font-size:19px;color:var(--tinta)}
+.card .melhor.off{background:var(--cinza-bg);color:var(--suave)}
+.card .info{font-size:12.5px;color:var(--suave)}
+.card{cursor:pointer}
+.paginas{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:34px;flex-wrap:wrap}
+.paginas button{min-width:42px;height:42px;border-radius:12px;border:1.5px solid var(--linha);background:#fff;font-weight:600;color:var(--tinta2)}
+.paginas button.on{background:var(--tinta);border-color:var(--tinta);color:#fff}
+.paginas button:disabled{opacity:.35;cursor:default}
+.paginas span{color:var(--suave);padding:0 4px}
+.selo-melhor{display:inline-block;font-size:11px;font-weight:700;background:var(--verde);color:#fff;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.modal.grande .caixa{max-width:1120px;text-align:left;padding:0;background:transparent;max-height:92vh;overflow:auto;border-radius:32px}
+.modal.grande .painel{margin:0}
+.fechar{position:sticky;top:12px;float:right;margin:12px 12px 0 0;z-index:2;width:40px;height:40px;border-radius:50%;border:0;background:var(--tinta);color:#fff;font-size:20px}
+.tons-filtro{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+@media (max-width:700px){.fc-rot{min-width:100%}.filtros-cat{padding:14px}}
 /* demo */
 .demo-bar{background:var(--tinta);color:#f6e7e3;font-size:13px;text-align:center;padding:8px 14px}
 .demo-bar b{color:#fff}
@@ -316,6 +353,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
     <a href="#" class="logo">Voltou<i>!</i></a>
     <div class="links">
       <a href="#inicio">Buscar</a>
+      <a href="#catalogo">Catálogo</a>
       <a href="#radar">Radar</a>
       <a href="#como">Como funciona</a>
       <a href="#lojas">Lojas</a>
@@ -360,6 +398,35 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
 <div class="wrap" id="resultado"></div>
 
 <div class="ticker" id="ticker" hidden><div class="faixa" id="faixa"></div></div>
+
+<section class="bloco" id="catalogo" style="padding-top:60px">
+  <div class="wrap">
+    <div class="titulo-sec">
+      <div><div class="eyebrow">Catálogo</div><h2>Todas as makes, <em>todas as lojas</em></h2></div>
+      <p id="catResumo">Compare preços e veja onde tem em estoque agora.</p>
+    </div>
+    <div class="filtros-cat">
+      <div class="fc-linha">
+        <label class="fc-busca"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fBusca" type="search" placeholder="Filtrar por nome, cor ou marca…" aria-label="Filtrar catálogo"></label>
+        <select id="fMarca" class="fc-sel" aria-label="Marca"><option value="">Todas as marcas</option></select>
+        <select id="fOrdem" class="fc-sel" aria-label="Ordenar">
+          <option value="relevancia">Mais relevantes</option>
+          <option value="menor">Menor preço</option>
+          <option value="maior">Maior preço</option>
+          <option value="lojas">Em mais lojas</option>
+        </select>
+        <label class="switch"><input type="checkbox" id="fDisp"> Só disponíveis</label>
+      </div>
+      <div class="fc-linha"><span class="fc-rot">Tipo</span><div class="chips-rolam" id="fTipos"></div></div>
+      <div class="fc-linha"><span class="fc-rot">Loja</span><div class="chips-rolam" id="fLojas"></div></div>
+      <div class="fc-linha"><span class="fc-rot">Cor</span><div class="chips-rolam" id="fCores"></div></div>
+      <div class="fc-linha"><span class="fc-rot">Tom de pele</span><div class="chips-rolam" id="fTons"></div></div>
+      <div class="fc-rodape"><span id="fTotal">Carregando…</span><button class="limpar" id="fLimpar" type="button">Limpar filtros</button></div>
+    </div>
+    <div class="grade" id="gradeCat"><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div></div>
+    <nav class="paginas" id="paginas" aria-label="Páginas"></nav>
+  </div>
+</section>
 
 <section class="bloco" id="radar">
   <div class="wrap">
@@ -481,6 +548,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
 </footer>
 
 <div class="modal" id="modal"><div class="caixa" id="modalCaixa"></div></div>
+<div class="modal grande" id="modalProduto"><div class="caixa"><button class="fechar" id="fecharProduto" aria-label="Fechar">×</button><div id="produtoCorpo"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -561,7 +629,7 @@ async function buscarCatalogo(termo, limite = 400) {
   if (!ts.length) return [];
   if (DEMO) { await carregarDemo(); return demoCatalogo().filter(r => ts.every(t => (r.busca || "").includes(t))); }
   const filtro = ts.map(t => `busca.ilike.*${t}*`).join(",");
-  return api(`catalogo?select=loja,marca,produto,cor,categoria,titulo,url,url_afiliado,imagem,preco,disponivel,atualizado_em&and=(${encodeURIComponent(filtro)})&order=disponivel.desc,preco.asc.nullslast&limit=${limite}`);
+  return api(`catalogo?select=${CAMPOS}&and=(${encodeURIComponent(filtro)})&order=disponivel.desc,preco.asc.nullslast&limit=${limite}`);
 }
 
 /* ------------------------------------------------ autocompletar */
@@ -647,9 +715,12 @@ $("#btnBuscar").onclick = () => { if (sugAtual[0]) escolher(sugAtual[0]); else a
 
 /* ------------------------------------------------ escolha -> tipos -> comparação */
 const R = $("#resultado");
-let escolhido = null;
+let escolhido = null, ALVO = null;
+const alvo = () => ALVO || R;
+const CAMPOS = "loja,marca,produto,cor,categoria,titulo,url,url_afiliado,imagem,preco,disponivel,grupo,familia,tom,atualizado_em";
 
 function escolher(g) {
+  ALVO = null;
   escolhido = g; q.value = g.rotulo; sug.classList.remove("on"); atualizarFantasma("");
   const cats = [...g.cats];
   if (cats.length === 1) return abrirComparacao(g, cats[0]);
@@ -659,69 +730,105 @@ function escolher(g) {
     <div class="grade-tipos">${cats.map(c => {
       const ls = g.linhas.filter(r => (r.categoria || "Outro") === c), disp = ls.some(r => r.disponivel);
       const img = ls.find(r => r.imagem)?.imagem;
-      return `<button class="tipo" data-c="${esc(c)}"><div class="ilu">${fotoOu(img, c, corDe(g.rotulo), 86)}</div>
+      return `<button class="tipo" data-c="${esc(c)}"><div class="ilu">${fotoOu(img, c, "", 86)}</div>
         <b>${esc(c)}</b><span>${new Set(ls.map(r => r.loja)).size} lojas · ${disp ? "tem em estoque" : "esgotado"}</span></button>`; }).join("")}
     </div></div>`;
   $$(".tipo").forEach(b => b.onclick = () => abrirComparacao(g, b.dataset.c));
   R.scrollIntoView({behavior: "smooth", block: "start"});
 }
 
+async function linhasDoGrupo(grupo) {
+  if (DEMO) { await carregarDemo(); return demoCatalogo().filter(r => r.grupo === grupo); }
+  return api(`catalogo?select=${CAMPOS}&grupo=eq.${encodeURIComponent(grupo)}&order=disponivel.desc,preco.asc.nullslast&limit=1500`);
+}
+
+let tomFiltro = "";
 async function abrirComparacao(g, cat, corEscolhida) {
   const base = g.linhas.filter(r => (r.categoria || "Outro") === cat);
   const ref = base[0];
-  // busca todas as cores do mesmo produto (em todas as lojas)
+  // todas as cores do mesmo produto, em todas as lojas
   let todas = base;
   try {
-    const termo = `${ref.marca || ""} ${ref.produto}`;
-    const mais = await buscarCatalogo(termo, 600);
-    const tp = toks(ref.produto);
-    todas = mais.filter(r => (r.categoria || "Outro") === cat && tp.every(t => norm(r.produto).includes(t)));
+    if (ref.grupo) todas = (await linhasDoGrupo(ref.grupo)).filter(r => (r.categoria || "Outro") === cat);
+    else {
+      const mais = await buscarCatalogo(`${ref.marca || ""} ${ref.produto}`, 600), tp = toks(ref.produto);
+      todas = mais.filter(r => (r.categoria || "Outro") === cat && tp.every(t => norm(r.produto).includes(t)));
+    }
     if (!todas.length) todas = base;
   } catch (e) { console.warn(e); }
 
   const cores = new Map();
   for (const r of todas) {
     const k = norm(r.cor) || "_";
-    const c = cores.get(k) || {nome: r.cor || "Única", img: null, disp: false};
+    const c = cores.get(k) || {nome: r.cor || "Única", img: null, disp: false, tom: r.tom || ""};
     c.img ||= r.imagem; c.disp ||= r.disponivel; cores.set(k, c);
   }
-  const corAtual = corEscolhida ?? (g.tipo === "cor" ? norm(g.rotulo) : norm(ref.cor) || "_");
+  const tons = [...new Set([...cores.values()].map(c => c.tom).filter(Boolean))].sort();
+  let corAtual = corEscolhida ?? (g.tipo === "cor" ? norm(g.rotulo) : null);
+  if (!corAtual || !cores.has(corAtual)) {   // começa na cor mais barata disponível
+    const melhor = todas.filter(r => r.disponivel && r.preco).sort((a, b) => a.preco - b.preco)[0] || todas[0];
+    corAtual = norm(melhor.cor) || "_";
+  }
   const linhas = todas.filter(r => (norm(r.cor) || "_") === corAtual);
   const porLoja = new Map();
   for (const r of linhas) { const a = porLoja.get(r.loja); if (!a || (r.disponivel && !a.disponivel) || (r.disponivel === a.disponivel && (r.preco || 1e9) < (a.preco || 1e9))) porLoja.set(r.loja, r); }
   const lista = [...porLoja.values()].sort((a, b) => (b.disponivel - a.disponivel) || ((a.preco || 1e9) - (b.preco || 1e9)));
   const disp = lista.filter(r => r.disponivel), corNome = cores.get(corAtual)?.nome || "";
+  const melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
   const img = lista.find(r => r.imagem)?.imagem || cores.get(corAtual)?.img;
   const recente = lista.map(r => r.atualizado_em).sort().pop();
+  const nomeProduto = g.nome || ref.produto;
+  const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
-  R.innerHTML = `<div class="painel">
+  alvo().innerHTML = `<div class="painel">
     <div class="passos"><b>${esc(g.rotulo)}</b><span class="sep">›</span>${g.cats.size > 1 ? `<button id="voltarTipos">${esc(cat)}</button>` : `<span>${esc(cat)}</span>`}<span class="sep">›</span><span>Preços e estoque</span></div>
     <div class="comparar">
-      <div><div class="foto-grande">${fotoOu(img, cat, corDe(corNome || ref.produto), 220)}<span class="pill ${disp.length ? "on" : "off"}">${disp.length ? "Disponível agora" : "Esgotado"}</span></div></div>
+      <div><div class="foto-grande">${fotoOu(img, cat, "", 220)}<span class="pill ${disp.length ? "on" : "off"}">${disp.length ? "Disponível agora" : "Esgotado"}</span></div></div>
       <div>
         <div class="marca">${esc(ref.marca || "")} · ${esc(cat)}</div>
-        <h2>${esc(ref.produto)}</h2>
-        <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${esc(corNome)}</b> · ` : ""}${disp.length ? `<b>Tem em ${disp.length} loja${disp.length > 1 ? "s" : ""}</b>${disp[0].preco ? ", a partir de " + brl(Math.min(...disp.filter(d => d.preco).map(d => d.preco))) : ""}` : "Esgotado em todas as lojas que acompanhamos"}</div>
-        ${cores.size > 1 ? `<div class="cores-titulo">Outras cores (${cores.size})</div><div class="cores">${[...cores].map(([k, c]) => `
+        <h2>${esc(nomeProduto)}</h2>
+        <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${esc(corNome)}</b> · ` : ""}${melhorLoja ? `<b>Melhor preço: ${brl(melhorLoja.preco)}</b> na ${esc(melhorLoja.loja)} · ` : ""}${disp.length ? `tem em ${disp.length} de ${lista.length} loja${lista.length > 1 ? "s" : ""}` : "esgotado em todas as lojas que acompanhamos"}</div>
+        ${cores.size > 1 ? `<div class="cores-titulo">Cores (${cores.size})</div>
+          ${tons.length > 1 ? `<div class="tons-filtro">${["", ...tons].map(t => `<button class="chip${t === tomFiltro ? " on" : ""}" data-tom="${esc(t)}">${t ? "Pele " + esc(t).toLowerCase() : "Todos os tons"}</button>`).join("")}</div>` : ""}
+          <div class="cores">${coresVisiveis.map(([k, c]) => `
           <button class="cor${k === corAtual ? " on" : ""}" data-k="${esc(k)}"><span class="bol">${c.img ? `<img src="${esc(c.img)}" alt="" loading="lazy">` : `<span style="display:grid;place-items:center;width:100%;height:100%;font-size:10px;font-weight:700">${esc((c.nome || "?").slice(0, 2).toUpperCase())}</span>`}</span>${esc(c.nome)}${c.disp ? '<span class="d" title="tem em estoque"></span>' : ""}</button>`).join("")}</div>` : ""}
         <div class="lojas-lista">${lista.map(r => `
           <div class="linha-loja${r.disponivel ? " disp" : ""}">
             ${logoLoja(r.loja)}
-            <div style="min-width:0"><div class="ln">${esc(r.loja)}</div><div class="lt">${esc(r.titulo)}</div></div>
+            <div style="min-width:0"><div class="ln">${esc(r.loja)}${r === melhorLoja && disp.length > 1 ? '<span class="selo-melhor">Melhor preço</span>' : ""}</div><div class="lt">${esc(r.titulo)}</div></div>
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${r.disponivel ? `<a class="btn btn-esc btn-sm" href="${esc(urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">Comprar</a>` : `<a class="btn btn-linha btn-sm" href="${esc(urlSegura(r.url))}" target="_blank" rel="noopener">Ver</a>`}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}</div>
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
         </div>
-        <div class="atualizado">Estoque conferido ${tempo(recente)}. Preço e estoque podem mudar na loja.</div>
+        <div class="atualizado">Estoque conferido ${tempo(recente)}. Preço e estoque podem mudar na loja. Ainda não acompanhamos Sephora, MAC, Beleza na Web e Mercado Livre.</div>
       </div>
     </div></div>`;
-  $("#voltarTipos") && ($("#voltarTipos").onclick = () => escolher(g));
-  $$(".cor").forEach(b => b.onclick = () => abrirComparacao(g, cat, b.dataset.k));
-  $("#btnAvisar").onclick = () => preencherAlerta({categoria: cat, marca: ref.marca, nome: ref.produto, cor: corNome === "Única" ? "" : corNome});
-  if (corEscolhida === undefined) R.scrollIntoView({behavior: "smooth", block: "start"});
+  const raiz = alvo();
+  raiz.querySelector("#voltarTipos") && (raiz.querySelector("#voltarTipos").onclick = () => escolher(g));
+  raiz.querySelectorAll(".cor").forEach(b => b.onclick = () => abrirComparacao(g, cat, b.dataset.k));
+  raiz.querySelectorAll("[data-tom]").forEach(b => b.onclick = () => { tomFiltro = b.dataset.tom; abrirComparacao(g, cat, corAtual); });
+  raiz.querySelector("#btnAvisar").onclick = () => { fecharProduto(); preencherAlerta({categoria: cat, marca: ref.marca, nome: nomeProduto, cor: corNome === "Única" ? "" : corNome}); };
+  if (corEscolhida === undefined && !ALVO) R.scrollIntoView({behavior: "smooth", block: "start"});
 }
+
+/* produto aberto a partir do catálogo: abre numa janela por cima */
+async function abrirProduto(v) {
+  ALVO = $("#produtoCorpo"); tomFiltro = "";
+  ALVO.innerHTML = `<div class="painel"><div class="esqueleto" style="min-height:420px"></div></div>`;
+  $("#modalProduto").classList.add("on"); document.body.style.overflow = "hidden";
+  try {
+    const linhas = await linhasDoGrupo(v.grupo);
+    if (!linhas.length) throw new Error("sem dados");
+    const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, cats: new Set([v.categoria]), linhas: linhas.map(r => ({...r, categoria: v.categoria})), tipo: "produto"};
+    await abrirComparacao(g, v.categoria, null);
+  } catch (e) { ALVO.innerHTML = `<div class="painel"><div class="vazio">Não consegui abrir este produto agora.</div></div>`; }
+}
+function fecharProduto() { $("#modalProduto").classList.remove("on"); document.body.style.overflow = ""; ALVO = null; }
+$("#fecharProduto").onclick = fecharProduto;
+$("#modalProduto").onclick = e => { if (e.target.id === "modalProduto") fecharProduto(); };
+addEventListener("keydown", e => { if (e.key === "Escape") fecharProduto(); });
 
 function preencherAlerta({categoria, marca, nome, cor}) {
   const r = $$("#cats input").find(i => i.value === categoria) || $$("#cats input").find(i => i.value === "Outro");
@@ -730,6 +837,149 @@ function preencherAlerta({categoria, marca, nome, cor}) {
   $("#alerta").scrollIntoView({behavior: "smooth"});
   setTimeout(() => ($("#email").value ? $("#btnEnviar") : $("#email")).focus({preventScroll: true}), 600);
   toast("Produto preenchido. Agora é só dizer onde te avisar 💌");
+}
+
+/* ------------------------------------------------ catálogo com filtros e páginas */
+const POR_PAGINA = 24;
+const TIPOS = ["Blush","Batom","Gloss","Lip tint","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador"];
+const CORES = [["Nude","#d8b49c"],["Rosa","#e68aa6"],["Vermelho","#c7202f"],["Vinho","#6d1a33"],["Marrom","#7b4a30"],["Coral e pêssego","#f28c6b"],["Roxo","#8c58b8"],["Dourado e bronze","#c9a04a"],["Prata","#c4c6cc"],["Preto","#1f1a1c"],["Branco","#ffffff"],["Transparente","#f3eeea"],["Azul e verde","#2f8f8a"]];
+const TONS = ["Claro","Médio","Escuro"];
+const F = {busca: "", marca: "", ordem: "relevancia", disp: false, tipo: "", lojas: [], cores: [], tons: [], pagina: 1};
+let catSeq = 0, VITRINE_DEMO = null;
+
+function lerFiltrosDaUrl() {
+  try { const h = new URLSearchParams(location.hash.startsWith("#catalogo?") ? location.hash.slice(10) : "");
+    for (const k of ["busca", "marca", "ordem", "tipo"]) if (h.get(k)) F[k] = h.get(k);
+    for (const k of ["lojas", "cores", "tons"]) if (h.get(k)) F[k] = h.get(k).split("|");
+    F.disp = h.get("disp") === "1"; F.pagina = +h.get("p") || 1; } catch {}
+}
+
+function chipsCatalogo() {
+  const chip = (grupo, valor, rotulo, on, extra = "") => `<button type="button" class="chip${on ? " on" : ""}" data-g="${grupo}" data-v="${esc(valor)}">${extra}${esc(rotulo)}</button>`;
+  $("#fTipos").innerHTML = chip("tipo", "", "Todos", !F.tipo) + TIPOS.map(t => chip("tipo", t, t, F.tipo === t)).join("");
+  const lojas = LOJAS.map(l => l.nome).filter(n => n !== "TikTok Shop");
+  $("#fLojas").innerHTML = chip("lojas", "", "Todas", !F.lojas.length) + lojas.map(n => {
+    const d = dominioDe(n);
+    return chip("lojas", n, n, F.lojas.includes(n), d ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(d)}&sz=32" alt="" onerror="this.remove()">` : "");
+  }).join("");
+  $("#fCores").innerHTML = chip("cores", "", "Todas", !F.cores.length) + CORES.map(([n, hex]) => chip("cores", n, n, F.cores.includes(n), `<span class="sw" style="background:${hex}"></span>`)).join("");
+  $("#fTons").innerHTML = chip("tons", "", "Todos", !F.tons.length) + TONS.map(t => chip("tons", t, t, F.tons.includes(t))).join("") +
+    `<span style="font-size:12px;color:var(--suave);align-self:center;flex:none">para base, corretivo, pó e contorno</span>`;
+  $$(".filtros-cat .chip").forEach(b => b.onclick = () => {
+    const g = b.dataset.g, v = b.dataset.v;
+    if (g === "tipo") F.tipo = v;
+    else if (!v) F[g] = [];
+    else F[g] = F[g].includes(v) ? F[g].filter(x => x !== v) : [...F[g], v];
+    F.pagina = 1; chipsCatalogo(); carregarCatalogo();
+  });
+}
+
+function filtrosAtivos() { return !!(F.busca || F.marca || F.disp || F.tipo || F.lojas.length || F.cores.length || F.tons.length); }
+const arr = l => `{${l.map(x => `"${x.replace(/"/g, '\\"')}"`).join(",")}}`;
+
+async function consultarVitrine() {
+  const de = (F.pagina - 1) * POR_PAGINA;
+  if (DEMO) {
+    await carregarDemo();
+    VITRINE_DEMO ||= agregarDemo(demoCatalogo());
+    let l = VITRINE_DEMO.filter(v => (!F.tipo || v.categoria === F.tipo) && (!F.disp || v.disponivel) && (!F.marca || v.marca === F.marca)
+      && (!F.lojas.length || F.lojas.some(x => (F.disp ? v.lojas_disponiveis : v.lojas).includes(x)))
+      && toks(F.busca).every(t => v.busca.includes(t)));
+    return {itens: ordenar(l).slice(de, de + POR_PAGINA), total: l.length};
+  }
+  const p = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,loja_min,url_min,lojas,lojas_disponiveis,n_lojas,n_cores,disponivel"});
+  if (F.tipo) p.set("categoria", `eq.${F.tipo}`);
+  if (F.marca) p.set("marca", `eq.${F.marca}`);
+  if (F.disp) p.set("disponivel", "eq.true");
+  if (F.lojas.length) p.set(F.disp ? "lojas_disponiveis" : "lojas", `ov.${arr(F.lojas)}`);
+  if (F.cores.length) p.set("familias", `ov.${arr(F.cores)}`);
+  if (F.tons.length) p.set("tons", `ov.${arr(F.tons)}`);
+  const ts = toks(F.busca).slice(0, 6);
+  if (ts.length) p.set("and", `(${ts.map(t => `busca.ilike.*${t}*`).join(",")})`);
+  p.set("order", {menor: "preco_min.asc.nullslast", maior: "preco_min.desc.nullslast", lojas: "n_lojas.desc,preco_min.asc"}[F.ordem]
+    || "disponivel.desc,n_lojas.desc,n_cores.desc,preco_min.asc");
+  p.set("offset", de); p.set("limit", POR_PAGINA);
+  const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${p}`, {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`, Prefer: "count=exact"}});
+  if (!r.ok) throw new Error(`Erro ${r.status}`);
+  const total = +((r.headers.get("content-range") || "").split("/")[1] || 0);
+  return {itens: await r.json(), total};
+}
+function ordenar(l) {
+  const pr = v => v.preco_min ?? 1e9;
+  return [...l].sort(F.ordem === "menor" ? (a, b) => pr(a) - pr(b) : F.ordem === "maior" ? (a, b) => pr(b) - pr(a)
+    : F.ordem === "lojas" ? (a, b) => b.n_lojas - a.n_lojas : (a, b) => (b.disponivel - a.disponivel) || (b.n_lojas - a.n_lojas) || (b.n_cores - a.n_cores));
+}
+function agregarDemo(linhas) {
+  const m = new Map();
+  for (const r of linhas) { if (!r.categoria || r.categoria === "Outro") continue; const g = m.get(r.grupo) || []; g.push(r); m.set(r.grupo, g); }
+  return [...m.entries()].map(([grupo, ls]) => {
+    const disp = ls.filter(r => r.disponivel), cp = (disp.length ? disp : ls).filter(r => r.preco).sort((a, b) => a.preco - b.preco), mel = cp[0] || ls[0];
+    return {grupo, marca: ls[0].marca, nome: ls[0].produto, categoria: ls[0].categoria, imagem: (disp.find(r => r.imagem) || ls.find(r => r.imagem) || {}).imagem,
+      preco_min: mel.preco, loja_min: mel.loja, url_min: mel.url_afiliado || mel.url, lojas: [...new Set(ls.map(r => r.loja))], lojas_disponiveis: [...new Set(disp.map(r => r.loja))],
+      n_lojas: new Set(ls.map(r => r.loja)).size, n_cores: new Set(ls.map(r => norm(r.cor))).size, disponivel: !!disp.length, busca: ls.map(r => r.busca).join(" ")};
+  });
+}
+
+function cardVitrine(v, i) {
+  const outras = v.n_lojas - 1;
+  return `<article class="card" data-i="${i}" tabindex="0" role="button" aria-label="Ver lojas e preços de ${esc(v.nome)}">
+    <div class="foto">${fotoOu(v.imagem, v.categoria, "", 150)}
+      <span class="pill ${v.disponivel ? "on" : "off"}">${v.disponivel ? "Disponível" : "Esgotado"}</span><span class="cat">${esc(v.categoria || "")}</span></div>
+    <div class="corpo">
+      <div class="m">${esc(v.marca || "")}</div><div class="n">${esc(v.nome)}</div>
+      <div class="melhor${v.disponivel ? "" : " off"}">${v.disponivel ? "Melhor preço" : "Último preço visto"}<b>${v.preco_min ? brl(v.preco_min) : "—"}</b>na ${esc(v.loja_min || "")}</div>
+      <div class="info">${v.n_cores > 1 ? `${v.n_cores} cores · ` : ""}${outras > 0 ? `+${outras} loja${outras > 1 ? "s" : ""}` : "1 loja"}${v.lojas_disponiveis?.length ? ` · tem em ${v.lojas_disponiveis.length}` : ""}</div>
+    </div></article>`;
+}
+
+function paginacao(total) {
+  const n = Math.max(1, Math.ceil(total / POR_PAGINA)), p = F.pagina;
+  if (n <= 1) { $("#paginas").innerHTML = ""; return; }
+  const nums = new Set([1, n, p - 2, p - 1, p, p + 1, p + 2].filter(x => x >= 1 && x <= n));
+  let html = `<button data-p="${p - 1}" ${p === 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>`, ant = 0;
+  for (const x of [...nums].sort((a, b) => a - b)) { if (x - ant > 1) html += "<span>…</span>"; html += `<button data-p="${x}" class="${x === p ? "on" : ""}">${x}</button>`; ant = x; }
+  html += `<button data-p="${p + 1}" ${p === n ? "disabled" : ""} aria-label="Próxima página">›</button>`;
+  $("#paginas").innerHTML = html;
+  $$("#paginas button[data-p]").forEach(b => b.onclick = () => { F.pagina = +b.dataset.p; carregarCatalogo(); $("#catalogo").scrollIntoView({behavior: "smooth"}); });
+}
+
+let ITENS_CAT = [];
+async function carregarCatalogo() {
+  const meu = ++catSeq;
+  $("#fLimpar").hidden = !filtrosAtivos();
+  try { history.replaceState(null, "", filtrosAtivos() || F.pagina > 1 ? "#catalogo?" + new URLSearchParams(Object.entries({busca: F.busca, marca: F.marca, ordem: F.ordem === "relevancia" ? "" : F.ordem, tipo: F.tipo, lojas: F.lojas.join("|"), cores: F.cores.join("|"), tons: F.tons.join("|"), disp: F.disp ? "1" : "", p: F.pagina > 1 ? F.pagina : ""}).filter(([, v]) => v)) : location.pathname); } catch {}
+  $("#gradeCat").style.opacity = .5;
+  try {
+    const {itens, total} = await consultarVitrine();
+    if (meu !== catSeq) return;
+    ITENS_CAT = itens;
+    $("#fTotal").innerHTML = total ? `<b>${total.toLocaleString("pt-BR")}</b> produto${total > 1 ? "s" : ""} · página ${F.pagina} de ${Math.ceil(total / POR_PAGINA)}` : "Nenhum produto com esses filtros";
+    $("#gradeCat").innerHTML = itens.map(cardVitrine).join("") || `<div class="vazio">Nada encontrado com esses filtros. <button class="limpar" onclick="document.getElementById('fLimpar').click()">Limpar filtros</button> ou <a href="#alerta" style="color:var(--rosa);font-weight:600">crie um alerta</a> que a gente procura pra você.</div>`;
+    $$("#gradeCat .card").forEach(c => { const abre = () => abrirProduto(ITENS_CAT[+c.dataset.i]); c.onclick = abre; c.onkeydown = e => { if (e.key === "Enter") abre(); }; });
+    paginacao(total);
+  } catch (e) {
+    console.warn(e);
+    $("#gradeCat").innerHTML = `<div class="vazio">O catálogo está sendo atualizado. Volte em alguns minutos. 💄</div>`; $("#paginas").innerHTML = ""; $("#fTotal").textContent = "";
+  } finally { $("#gradeCat").style.opacity = 1; }
+}
+
+async function iniciarCatalogo() {
+  lerFiltrosDaUrl();
+  $("#fBusca").value = F.busca; $("#fOrdem").value = F.ordem; $("#fDisp").checked = F.disp;
+  try {
+    const marcas = DEMO ? [...new Set(demoCatalogo().map(r => r.marca).filter(Boolean))].sort().map(m => ({marca: m})) : await rpc("marcas_vitrine", {});
+    $("#fMarca").innerHTML = `<option value="">Todas as marcas</option>` + marcas.map(m => `<option value="${esc(m.marca)}"${m.marca === F.marca ? " selected" : ""}>${esc(m.marca)}${m.total ? ` (${m.total})` : ""}</option>`).join("");
+  } catch (e) { console.warn(e); }
+  chipsCatalogo();
+  let t;
+  $("#fBusca").oninput = e => { clearTimeout(t); t = setTimeout(() => { F.busca = e.target.value.trim(); F.pagina = 1; carregarCatalogo(); }, 300); };
+  $("#fMarca").onchange = e => { F.marca = e.target.value; F.pagina = 1; carregarCatalogo(); };
+  $("#fOrdem").onchange = e => { F.ordem = e.target.value; F.pagina = 1; carregarCatalogo(); };
+  $("#fDisp").onchange = e => { F.disp = e.target.checked; F.pagina = 1; carregarCatalogo(); };
+  $("#fLimpar").onclick = () => { Object.assign(F, {busca: "", marca: "", ordem: "relevancia", disp: false, tipo: "", lojas: [], cores: [], tons: [], pagina: 1});
+    $("#fBusca").value = ""; $("#fMarca").value = ""; $("#fOrdem").value = "relevancia"; $("#fDisp").checked = false; chipsCatalogo(); carregarCatalogo(); };
+  await carregarCatalogo();
+  if (location.hash.startsWith("#catalogo?")) $("#catalogo").scrollIntoView();
 }
 
 /* ------------------------------------------------ radar (vitrine) */
@@ -905,6 +1155,7 @@ async function iniciar() {
     }
     LOJAS = DEMO ? (DEMO_DADOS.lojas || []) : await api("lojas?select=*&order=nome");
     renderLojas();
+    iniciarCatalogo();
     await carregarRadar();
     exemplos(RADAR.map(p => (p.cor && p.cor.length < 22 ? p.cor : p.nome.split(" ").slice(0, 3).join(" "))));
     const est = DEMO ? {produtos: RADAR.length, lojas: LOJAS.length, catalogo: demoCatalogo().length} : await rpc("estatisticas", {});
