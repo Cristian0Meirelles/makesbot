@@ -88,6 +88,21 @@ class SupabaseDB:
             saida += self._req("GET", "catalogo", params={"grupo": f"eq.{g}", "select": "*", "limit": "2000"}) or []
         return saida
 
+    def lojas_curadoria(self) -> list[str]:
+        return [l["nome"] for l in self._req("GET", "lojas", params={"tipo": "eq.curadoria", "select": "nome"}) or []]
+
+    def catalogo_da_loja(self, loja: str) -> list[dict]:
+        return self._req("GET", "catalogo", params={"loja": f"eq.{loja}", "select": "grupo,url", "limit": "5000"}) or []
+
+    def apagar_catalogo_da_loja(self, loja: str):
+        self._req("DELETE", f"catalogo?loja=eq.{quote(loja)}")
+
+    def apagar_vitrine(self, grupo: str):
+        self._req("DELETE", f"vitrine?grupo=eq.{quote(grupo)}")
+
+    def apagar_loja(self, nome: str):
+        self._req("DELETE", f"lojas?nome=eq.{quote(nome)}")
+
     def limpar_catalogo(self, antes: dt.datetime):
         self._req("DELETE", f"catalogo?atualizado_em=lt.{quote(_iso(antes))}")
 

@@ -119,13 +119,28 @@ def main(argv=None) -> int:
         agora = dt.datetime.now(dt.timezone.utc)
         linhas = linhas_catalogo(cfg, agora)
         print(f"{len(linhas)} ofertas manuais")
-        if linhas and not args.seco:
-            db.salvar_catalogo(linhas)
-            grupos = sorted({l["grupo"] for l in linhas})
-            db.salvar_vitrine(montar_vitrine(db.catalogo_por_grupos(grupos), agora))
-            db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n == "TikTok Shop" else None,
-                              "tipo": "curadoria", "frequencia": "ofertas selecionadas", "ok": True,
-                              "atualizado_em": agora.isoformat()} for n in sorted({l["loja"] for l in linhas})])
+        if not args.seco:
+            # tira do site as ofertas manuais antigas (inclusive as que foram apagadas do arquivo)
+            lojas_novas = {l["loja"] for l in linhas}
+            antigas = set(db.lojas_curadoria()) | lojas_novas
+            grupos = {l["grupo"] for l in linhas}
+            for loja in antigas:
+                grupos |= {r["grupo"] for r in db.catalogo_da_loja(loja)}
+                db.apagar_catalogo_da_loja(loja)
+            if linhas:
+                db.salvar_catalogo(linhas)
+            linhas_grupos = db.catalogo_por_grupos(sorted(grupos))
+            vit = montar_vitrine(linhas_grupos, agora)
+            if vit:
+                db.salvar_vitrine(vit)
+            for g in grupos - {v["grupo"] for v in vit}:
+                db.apagar_vitrine(g)
+            for loja in antigas - lojas_novas:
+                db.apagar_loja(loja)
+            if linhas:
+                db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n == "TikTok Shop" else None,
+                                  "tipo": "curadoria", "frequencia": "ofertas selecionadas", "ok": True,
+                                  "atualizado_em": agora.isoformat()} for n in sorted(lojas_novas)])
         return 0
 
     if args.modo == "catalogo":
