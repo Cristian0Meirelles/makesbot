@@ -13,6 +13,10 @@ def test_busca_paginada_e_detalhe(largura):
                 "categoria": "Blush", "titulo": f"Blush {i}", "url": "https://example.com/p",
                 "preco": 20, "disponivel": False, "busca": "mac blush"} for i in range(501)]
     amostra.append(dict(amostra[0], grupo="outro", marca="Macrilan", busca="macrilan blush"))
+    for cor, preco, disponivel in [("Myth", 100.74, True), ("Film Noir", 150, False)]:
+        amostra.append(dict(amostra[0], grupo="batom", produto="MACximal", categoria="Batom",
+                            titulo="MACximal " + cor, cor=cor, preco=preco, disponivel=disponivel,
+                            busca="mac batom macximal " + cor.lower()))
     with pw.sync_playwright() as driver:
         browser = driver.chromium.launch()
         pagina = browser.new_page(viewport={"width": largura, "height": 800})
@@ -57,6 +61,15 @@ def test_busca_paginada_e_detalhe(largura):
         pagina.get_by_role("button", name="Próxima página").click()
         pagina.locator("#gradeCat .card").first.click()
         pw.expect(pagina.locator("#produtoCorpo")).to_contain_text("Blush")
+        pagina.locator("#fecharProduto").click()
+        pagina.locator("#q").fill("film noir")
+        pagina.locator("#q").press("Enter")
+        batom = pagina.locator("#gradeCat .card").filter(has_text="MACximal")
+        pw.expect(batom).to_contain_text("Esgotado")
+        pw.expect(batom).to_contain_text("150,00")
+        batom.click()
+        pw.expect(pagina.locator("#produtoCorpo .cor.on")).to_contain_text("Film Noir")
+        pw.expect(pagina.locator("#produtoCorpo .linha-loja").first).to_contain_text("esgotado")
         pagina.locator("#fecharProduto").click()
         pagina.locator("#q").fill("Inexistente")
         pagina.locator("#sugestoes .ver-todos").click()

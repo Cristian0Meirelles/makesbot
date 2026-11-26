@@ -107,19 +107,33 @@ function correspondeNaDemo(v, palavras) {
   const texto = norm(v.busca).split(" ");
   return palavras.every((p, i) => texto.some(t => permitePrefixo(palavras, i) ? t.startsWith(p) : t === p));
 }
+async function aplicarCorBuscada(itens, palavras) {
+  return Promise.all(itens.map(async item => {
+    const gerais = toks([item.nome, item.marca, item.categoria, ...(item.lojas || [])].join(" "));
+    const tom = palavras.filter((p, i) => !gerais.some(t => permitePrefixo(palavras, i) ? t.startsWith(p) : t === p));
+    if (!tom.length) return item;
+    const linhas = await linhasDoGrupo(item.grupo);
+    const candidatas = linhas.filter(r => r.cor && correspondeNaDemo({busca: r.cor}, tom));
+    if (!candidatas.length) return item;
+    const exata = candidatas.find(r => norm(r.cor) === tom.join(" ")) || candidatas[0];
+    const mesmaCor = candidatas.filter(r => norm(r.cor) === norm(exata.cor));
+    const [variante] = agregarDemo(mesmaCor);
+    return {...item, ...variante, nome: item.nome, corBuscada: exata.cor};
+  }));
+}
 async function preverProdutos(termo, signal) {
   const palavras = toks(termo);
   if (DEMO) {
     await carregarDemo();
     VITRINE_DEMO ||= agregarDemo(demoCatalogo());
-    return VITRINE_DEMO.filter(v => correspondeNaDemo(v, palavras)).slice(0, 6);
+    return aplicarCorBuscada(VITRINE_DEMO.filter(v => correspondeNaDemo(v, palavras)).slice(0, 6), palavras);
   }
   const params = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,disponivel",
     and: "(" + filtroDeBusca(palavras) + ")", order: "disponivel.desc,n_lojas.desc,grupo.asc", limit: "6"});
   const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${params}`,
     {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`}, signal});
   if (!r.ok) throw new Error("Sugestões indisponíveis");
-  return r.json();
+  return aplicarCorBuscada(await r.json(), palavras);
 }
 
 function agendarSugestoes() {
@@ -333,7 +347,7 @@ async function abrirProduto(v) {
     const linhas = await linhasDoGrupo(v.grupo);
     if (!linhas.length) throw new Error("sem dados");
     const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, cats: new Set([v.categoria]), linhas: linhas.map(r => ({...r, categoria: v.categoria})), tipo: "produto"};
-    await abrirComparacao(g, v.categoria, null);
+    await abrirComparacao(g, v.categoria, v.corBuscada ? norm(v.corBuscada) : null);
   } catch (e) { ALVO.innerHTML = `<div class="painel"><div class="vazio">Não consegui abrir este produto agora.</div></div>`; }
 }
 function fecharProduto(peloVoltar) {
@@ -451,7 +465,7 @@ async function consultarVitrine() {
     let l = VITRINE_DEMO.filter(v => (!F.tipo || v.categoria === F.tipo) && (!F.disp || v.disponivel) && (!F.marca || v.marca === F.marca)
       && (!F.lojas.length || F.lojas.some(x => (F.disp ? v.lojas_disponiveis : v.lojas).includes(x)))
       && correspondeNaDemo(v, ts));
-    return {itens: ordenar(l).slice(de, de + POR_PAGINA), total: l.length};
+    return {itens: await aplicarCorBuscada(ordenar(l).slice(de, de + POR_PAGINA), ts), total: l.length};
   }
   const p = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,loja_min,url_min,lojas,lojas_disponiveis,n_lojas,n_cores,disponivel"});
   if (F.tipo) p.set("categoria", `eq.${F.tipo}`);
@@ -468,7 +482,7 @@ async function consultarVitrine() {
   const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${p}`, {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`, Prefer: "count=exact"}});
   if (!r.ok) throw new Error(`Erro ${r.status}`);
   const total = +((r.headers.get("content-range") || "").split("/")[1] || 0);
-  return {itens: await r.json(), total};
+  return {itens: await aplicarCorBuscada(await r.json(), ts), total};
 }
 function ordenar(l) {
   const pr = v => v.preco_min ?? 1e9;
@@ -492,7 +506,7 @@ function cardVitrine(v, i) {
     <div class="foto">${fotoOu(v.imagem, v.categoria, "", 120)}
       <span class="pill ${v.disponivel ? "on" : "off"}">${v.disponivel ? "Disponível" : "Esgotado"}</span></div>
     <div class="corpo">
-      <div class="m">${esc(v.marca || "")}</div><div class="n">${esc(v.nome)}</div>
+      <div class="m">${esc(v.marca || "")}</div><div class="n">${esc(v.nome)}${v.corBuscada ? " · " + esc(v.corBuscada) : ""}</div>
       <div class="preco-linha"><b>${v.preco_min ? brl(v.preco_min) : "—"}</b><small>${v.disponivel ? "melhor preço" : "último preço"} · ${esc(v.loja_min || "")}</small></div>
       <div class="info">${(() => { const o = oficialDe(v.marca); return o && (v.lojas || []).includes(o.loja) ? '<span style="color:#5b3fa3;font-weight:600">✓ site oficial</span> · ' : ""; })()}${v.n_cores > 1 ? `${v.n_cores} cores · ` : ""}${v.n_lojas > 1 ? `${v.n_lojas} lojas` : "1 loja"}${nd && v.n_lojas > 1 ? ` · <span class="ok">tem em ${nd}</span>` : ""}</div>
     </div></article>`;
