@@ -267,3 +267,28 @@ def test_afiliado_mercadolivre_link_colado():
     assert u == "https://produto.mercadolivre.com.br/MLB-123-batom-ruby-woo?matt_word=cotrinmeirellescristiano&matt_tool=76580280"
     u2 = m._afiliar("Mercado Livre", "https://www.mercadolivre.com.br/p/MLB1?pdp_filters=x")
     assert u2.endswith("?pdp_filters=x&matt_word=cotrinmeirellescristiano&matt_tool=76580280")
+
+
+# ---------------------------------------------------------------- ofertas manuais (TikTok Shop)
+def test_ofertas_manuais(tmp_path, monkeypatch):
+    from bot import manuais
+    arq = tmp_path / "m.yaml"
+    arq.write_text("""ofertas:
+  - link: https://www.tiktok.com/view/product/123
+    marca: MAC
+    produto: Powder Blush
+    cor: Film Noir
+    categoria: Blush
+    preco: 89.9
+  - link: https://www.tiktok.com/view/product/999
+    marca: MAC
+""", encoding="utf-8")
+    monkeypatch.setattr(manuais, "ARQUIVO", arq)
+    of = manuais.carregar({})
+    assert len(of) == 1 and of[0][0].loja == "TikTok Shop" and of[0][0].preco == 89.9 and of[0][1] == "Blush"
+    # aviso para quem espera
+    produto = {"id": "p1", "categoria": "Blush", "marca": "MAC", "nome": "Powder Blush", "cor": "Film Noir", "links": [],
+               "ativo": True, "disponivel": False, "inscricoes": [{"id": "i1", "email": "a@b.com", "token": "t", "ativo": True}]}
+    db = MemDB([produto]); n = Notificador(seco=True)
+    Motor(db, {"lojas": []}, n, trabalhadores=1).rodar("rapido")
+    assert len(n.enviados) == 1 and "TikTok Shop" in n.enviados[0]["texto"]

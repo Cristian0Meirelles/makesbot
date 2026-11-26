@@ -82,6 +82,12 @@ class SupabaseDB:
     def limpar_vitrine(self, antes: dt.datetime):
         self._req("DELETE", f"vitrine?atualizado_em=lt.{quote(_iso(antes))}")
 
+    def catalogo_por_grupos(self, grupos: list[str]) -> list[dict]:
+        saida = []
+        for g in grupos:
+            saida += self._req("GET", "catalogo", params={"grupo": f"eq.{g}", "select": "*", "limit": "2000"}) or []
+        return saida
+
     def limpar_catalogo(self, antes: dt.datetime):
         self._req("DELETE", f"catalogo?atualizado_em=lt.{quote(_iso(antes))}")
 

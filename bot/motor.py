@@ -127,6 +127,15 @@ class Motor:
                                     [o for o in ofertas if combina(p, f"{o.titulo} {o.extra.get('cor') or ''}", da_marca)])
             if modo == "feeds":
                 return
+        if modo in ("rapido", "tudo"):
+            from .manuais import carregar
+            por_loja: dict[str, list[Oferta]] = defaultdict(list)
+            for o, _cat in carregar(self.cfg):
+                por_loja[o.loja].append(o)
+            for loja, ofertas in por_loja.items():
+                for p in alvos:
+                    yield p, loja, (lambda ofertas=ofertas, p=p: [o for o in ofertas if combina(p, o.titulo, True)
+                                                                   and normalizar(p.get("marca")) in normalizar(o.extra.get("marca"))])
         for p in alvos:
             if modo in ("rapido", "tudo"):
                 for loja in self.lojas:

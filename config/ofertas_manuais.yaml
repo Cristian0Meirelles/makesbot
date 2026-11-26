@@ -1,0 +1,31 @@
+# =====================================================================
+#  Ofertas adicionadas na mão (TikTok Shop e qualquer outra loja)
+# ---------------------------------------------------------------------
+#  Use para lojas que não têm catálogo aberto, como o TikTok Shop.
+#  Ao salvar este arquivo no GitHub, o site atualiza sozinho em ~1 minuto.
+#
+#  Campos:
+#    link       (obrigatório) link do produto. Se for de afiliado, melhor.
+#    marca      (obrigatório) ex.: MAC
+#    produto    (obrigatório) nome do produto, ex.: Powder Blush
+#    categoria  (obrigatório) Blush, Batom, Gloss, Lip tint, Lápis labial, Base,
+#                Corretivo, Pó, Iluminador, Bronzer, Contorno, Sombra,
+#                Máscara de cílios, Delineador, Sobrancelha, Primer, Fixador
+#    cor        cor/tom, ex.: Film Noir
+#    preco      preço atual, ex.: 89.90
+#    imagem     link da foto (clique com o botão direito na foto → "Copiar endereço da imagem")
+#    disponivel true / false (padrão: true)
+#    loja       nome da loja (padrão: descobre pelo link, ex.: TikTok Shop)
+#
+#  Exemplo (apague o # do começo das linhas para usar):
+# =====================================================================
+
+ofertas:
+#  - link: https://www.tiktok.com/view/product/1234567890
+#    marca: MAC
+#    produto: Batom Matte Lipstick
+#    cor: Ruby Woo
+#    categoria: Batom
+#    preco: 79.90
+#    imagem: https://...
+#    disponivel: true

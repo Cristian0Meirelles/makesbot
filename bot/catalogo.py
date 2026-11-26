@@ -208,6 +208,14 @@ def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = No
         todas.extend(feed)
         total += len(feed)
         log.info("Feeds de afiliados: %d itens de maquiagem", len(feed))
+    # ofertas adicionadas à mão (TikTok Shop etc.)
+    from .manuais import linhas_catalogo as manuais
+    man = manuais(cfg, agora)
+    if man:
+        salvar(man)
+        todas.extend(man)
+        total += len(man)
+        log.info("Ofertas manuais: %d", len(man))
     limpar(agora - LIMPAR_APOS)
     if salvar_vitrine:
         vit = montar_vitrine(todas, agora)

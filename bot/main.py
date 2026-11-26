@@ -88,7 +88,7 @@ def testar(cfg: dict, args) -> int:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "testar"], nargs="?", default="rapido")
+    ap.add_argument("modo", choices=["rapido", "tiktok", "feeds", "tudo", "catalogo", "manuais", "testar"], nargs="?", default="rapido")
     ap.add_argument("--seco", action="store_true")
     ap.add_argument("--email")
     ap.add_argument("--whatsapp")
@@ -111,6 +111,22 @@ def main(argv=None) -> int:
             print("⚠️  Bot ainda não configurado: faltam os Secrets SUPABASE_URL e SUPABASE_SERVICE_KEY. Veja o README.")
             return 0
         db = SupabaseDB(url, chave)
+
+    if args.modo == "manuais":
+        import datetime as dt
+        from .catalogo import montar_vitrine
+        from .manuais import linhas_catalogo
+        agora = dt.datetime.now(dt.timezone.utc)
+        linhas = linhas_catalogo(cfg, agora)
+        print(f"{len(linhas)} ofertas manuais")
+        if linhas and not args.seco:
+            db.salvar_catalogo(linhas)
+            grupos = sorted({l["grupo"] for l in linhas})
+            db.salvar_vitrine(montar_vitrine(db.catalogo_por_grupos(grupos), agora))
+            db.salvar_lojas([{"nome": n, "dominio": "shop.tiktok.com" if n == "TikTok Shop" else None,
+                              "tipo": "curadoria", "frequencia": "ofertas selecionadas", "ok": True,
+                              "atualizado_em": agora.isoformat()} for n in sorted({l["loja"] for l in linhas})])
+        return 0
 
     if args.modo == "catalogo":
         from .catalogo import atualizar_catalogo
