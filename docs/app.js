@@ -87,10 +87,84 @@ async function buscarCatalogo(termo, limite = 400) {
 }
 
 const q = $("#q");
+const sugestoes = $("#sugestoes");
+let timerSugestoes, pedidoSugestoes;
+
+function fecharSugestoes() {
+  clearTimeout(timerSugestoes);
+  pedidoSugestoes?.abort();
+  sugestoes.classList.remove("on");
+  sugestoes.replaceChildren();
+}
+
+function permitePrefixo(palavras, i) {
+  return i === palavras.length - 1 && palavras[i] !== "mac";
+}
+function filtroDeBusca(palavras) {
+  return palavras.map((p, i) => `busca.imatch.[[:<:]]${p}${permitePrefixo(palavras, i) ? "" : "[[:>:]]"}`).join(",");
+}
+function correspondeNaDemo(v, palavras) {
+  const texto = norm(v.busca).split(" ");
+  return palavras.every((p, i) => texto.some(t => permitePrefixo(palavras, i) ? t.startsWith(p) : t === p));
+}
+async function preverProdutos(termo, signal) {
+  const palavras = toks(termo);
+  if (DEMO) {
+    await carregarDemo();
+    VITRINE_DEMO ||= agregarDemo(demoCatalogo());
+    return VITRINE_DEMO.filter(v => correspondeNaDemo(v, palavras)).slice(0, 6);
+  }
+  const params = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,disponivel",
+    and: "(" + filtroDeBusca(palavras) + ")", order: "disponivel.desc,n_lojas.desc,grupo.asc", limit: "6"});
+  const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${params}`,
+    {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`}, signal});
+  if (!r.ok) throw new Error("Sugestões indisponíveis");
+  return r.json();
+}
+
+function agendarSugestoes() {
+  fecharSugestoes();
+  const termo = q.value.trim();
+  if (!toks(termo).length || termo.length < 2) return;
+  const pedido = new AbortController();
+  pedidoSugestoes = pedido;
+  timerSugestoes = setTimeout(async () => {
+    let itens;
+    try { itens = await preverProdutos(termo, pedido.signal); }
+    catch { return; }
+    if (pedido.signal.aborted || document.activeElement !== q) return;
+    sugestoes.innerHTML = itens.map(v => `
+      <button type="button" class="sug">
+        <span class="mini">${fotoOu(v.imagem, v.categoria, "", 46)}</span>
+        <span><b class="t">${esc(v.nome)}</b><br><span class="s">${esc(v.marca)}${v.preco_min ? " · " + brl(v.preco_min) : ""}</span></span>
+        <span class="st">${v.disponivel ? "Tem" : "Esgotado"}</span>
+      </button>`).join("") + `<button type="button" class="ver-todos">Pesquisar “${esc(termo)}” no catálogo →</button>`;
+    sugestoes.querySelectorAll(".sug").forEach((botao, i) => {
+      botao.onclick = () => { fecharSugestoes(); abrirProduto(itens[i]); };
+    });
+    sugestoes.querySelector(".ver-todos").onclick = buscarNoCatalogo;
+    sugestoes.classList.add("on");
+  }, 240);
+}
+q.addEventListener("input", agendarSugestoes);
+q.addEventListener("focus", agendarSugestoes);
+$("#busca").addEventListener("focusout", e => {
+  if (!$("#busca").contains(e.relatedTarget)) fecharSugestoes();
+});
+$("#busca").addEventListener("keydown", e => {
+  if (e.key === "Escape") { q.focus(); fecharSugestoes(); }
+});
+document.addEventListener("pointerdown", e => {
+  if (!$("#busca").contains(e.target)) fecharSugestoes();
+});
 function buscarNoCatalogo() {
-  F.busca = q.value.trim();
-  F.pagina = 1;
+  fecharSugestoes();
+  Object.assign(F, filtrosIniciais(), {busca: q.value.trim()});
   $("#fBusca").value = F.busca;
+  $("#fMarca").value = "";
+  $("#fDisp").checked = false;
+  $("#fOrdem").value = F.ordem;
+  chipsCatalogo();
   carregarCatalogo();
   $("#catalogo").scrollIntoView({behavior: "smooth"});
 }
@@ -317,7 +391,8 @@ const POR_PAGINA = matchMedia("(max-width:700px)").matches ? 12 : 24;
 const TIPOS = ["Blush","Batom","Gloss","Lip tint","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador"];
 const CORES = [["Nude","#d8b49c"],["Rosa","#e68aa6"],["Vermelho","#c7202f"],["Vinho","#6d1a33"],["Marrom","#7b4a30"],["Coral e pêssego","#f28c6b"],["Roxo","#8c58b8"],["Dourado e bronze","#c9a04a"],["Prata","#c4c6cc"],["Preto","#1f1a1c"],["Branco","#ffffff"],["Transparente","#f3eeea"],["Azul e verde","#2f8f8a"]];
 const TONS = ["Claro","Médio","Escuro"];
-const F = {busca: "", marca: "", ordem: "relevancia", disp: false, tipo: "", lojas: [], cores: [], tons: [], pagina: 1};
+const filtrosIniciais = () => ({busca: "", marca: "", ordem: "relevancia", disp: false, tipo: "", lojas: [], cores: [], tons: [], pagina: 1});
+const F = filtrosIniciais();
 let catSeq = 0, VITRINE_DEMO = null;
 
 function lerFiltrosDaUrl() {
@@ -374,12 +449,13 @@ const arr = l => `{${l.map(x => `"${x.replace(/"/g, '\\"')}"`).join(",")}}`;
 
 async function consultarVitrine() {
   const de = (F.pagina - 1) * POR_PAGINA;
+  const ts = toks(F.busca);
   if (DEMO) {
     await carregarDemo();
     VITRINE_DEMO ||= agregarDemo(demoCatalogo());
     let l = VITRINE_DEMO.filter(v => (!F.tipo || v.categoria === F.tipo) && (!F.disp || v.disponivel) && (!F.marca || v.marca === F.marca)
       && (!F.lojas.length || F.lojas.some(x => (F.disp ? v.lojas_disponiveis : v.lojas).includes(x)))
-      && toks(F.busca).every(t => norm(v.busca).split(" ").includes(t)));
+      && correspondeNaDemo(v, ts));
     return {itens: ordenar(l).slice(de, de + POR_PAGINA), total: l.length};
   }
   const p = new URLSearchParams({select: "grupo,marca,nome,categoria,imagem,preco_min,loja_min,url_min,lojas,lojas_disponiveis,n_lojas,n_cores,disponivel"});
@@ -389,8 +465,7 @@ async function consultarVitrine() {
   if (F.lojas.length) p.set(F.disp ? "lojas_disponiveis" : "lojas", `ov.${arr(F.lojas)}`);
   if (F.cores.length) p.set("familias", `ov.${arr(F.cores)}`);
   if (F.tons.length) p.set("tons", `ov.${arr(F.tons)}`);
-  const ts = toks(F.busca);
-  if (ts.length) p.set("and", `(${ts.map(t => `busca.imatch.[[:<:]]${t}[[:>:]]`).join(",")})`);
+  if (ts.length) p.set("and", "(" + filtroDeBusca(ts) + ")");
   p.set("order", {menor: "preco_min.asc.nullslast", maior: "preco_min.desc.nullslast", lojas: "n_lojas.desc,preco_min.asc"}[F.ordem]
     || "disponivel.desc,n_lojas.desc,n_cores.desc,preco_min.asc");
   p.set("order", p.get("order") + ",grupo.asc");

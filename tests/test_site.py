@@ -37,8 +37,20 @@ def test_busca_paginada_e_detalhe(largura):
         pagina.route("**/*", recurso)
         pagina.goto("https://voltou.test/")
         pagina.locator("#gradeCat .card").first.wait_for()
+        pagina.locator("#q").fill("blu")
+        primeira = pagina.locator("#sugestoes .sug").first
+        pw.expect(primeira).to_be_visible()
+        assert pagina.locator("#q").input_value() == "blu"
+        primeira.click()
+        pw.expect(pagina.locator("#produtoCorpo")).to_contain_text("Blush")
+        pagina.locator("#fecharProduto").click()
+        pagina.locator("#btnBuscar").click()
+        pw.expect(pagina.locator("#catInfo")).to_contain_text("502 produtos")
+        assert pagina.locator("#fBusca").input_value() == "blu"
         pagina.locator("#q").fill("blush MAC")
+        pw.expect(pagina.locator("#sugestoes .sug")).to_have_count(6)
         pagina.locator("#q").press("Enter")
+        pw.expect(pagina.locator("#sugestoes")).to_be_hidden()
         pw.expect(pagina.locator("#catInfo")).to_contain_text("501 produtos")
         assert pagina.locator("#q").input_value() == "blush MAC"
         assert not pagina.locator("#modalProduto").is_visible()
@@ -47,7 +59,7 @@ def test_busca_paginada_e_detalhe(largura):
         pw.expect(pagina.locator("#produtoCorpo")).to_contain_text("Blush")
         pagina.locator("#fecharProduto").click()
         pagina.locator("#q").fill("Inexistente")
-        pagina.locator("#btnBuscar").click()
+        pagina.locator("#sugestoes .ver-todos").click()
         pagina.locator("#pedirBuscaAtual").click()
         assert pagina.locator("#nome").input_value().lower() == "inexistente"
         assert not erros

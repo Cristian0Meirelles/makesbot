@@ -181,6 +181,9 @@ nav .links a:hover{color:var(--tinta)}
 .dica-tab.on{display:inline-block}
 .sugestoes{position:absolute;left:0;right:0;top:calc(100% + 10px);background:var(--papel);border:1px solid var(--linha);border-radius:20px;box-shadow:0 24px 60px -20px rgba(60,20,30,.35);padding:8px;display:none;max-height:430px;overflow:auto}
 .sugestoes.on{display:block}
+.sugestoes button{width:100%;border:0;background:transparent;text-align:left;color:var(--tinta)}
+.sugestoes button:focus-visible{outline-offset:-2px}
+.sugestoes .ver-todos{padding:12px;color:var(--rosa-esc);font-weight:600}
 .sug{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:14px;cursor:pointer}
 .sug:hover,.sug.ativo{background:var(--creme2)}
 .sug .mini{width:46px;height:46px;border-radius:12px;background:var(--cinza-bg);flex:none;overflow:hidden;display:grid;place-items:center}
@@ -540,7 +543,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
 
           <button class="btn btn-rosa" id="btnBuscar" type="button">Buscar</button>
         </div>
-
+        <div id="sugestoes" class="sugestoes" role="region" aria-label="Sugestões de produtos"></div>
       </div>
       <div class="chips-exemplo" id="exemplos"><span>Tente:</span></div>
 
