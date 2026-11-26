@@ -257,3 +257,13 @@ def test_motor_feeds_avisa_com_link_afiliado(monkeypatch):
     Motor(db, {"lojas": []}, n, trabalhadores=1).rodar("feeds")
     assert len(n.enviados) == 1 and "awin1.com" in n.enviados[0]["texto"] and "MAC Cosmetics" in n.enviados[0]["texto"]
     assert "MAC Cosmetics" in db.lojas
+
+
+def test_afiliado_mercadolivre_link_colado():
+    import yaml, pathlib
+    cfg = yaml.safe_load(open(pathlib.Path(__file__).parent.parent / "config" / "lojas.yaml", encoding="utf-8"))
+    m = Motor(MemDB([]), cfg, Notificador(seco=True))
+    u = m._afiliar("Mercado Livre", "https://produto.mercadolivre.com.br/MLB-123-batom-ruby-woo")
+    assert u == "https://produto.mercadolivre.com.br/MLB-123-batom-ruby-woo?matt_word=cotrinmeirellescristiano&matt_tool=76580280"
+    u2 = m._afiliar("Mercado Livre", "https://www.mercadolivre.com.br/p/MLB1?pdp_filters=x")
+    assert u2.endswith("?pdp_filters=x&matt_word=cotrinmeirellescristiano&matt_tool=76580280")

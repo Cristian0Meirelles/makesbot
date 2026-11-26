@@ -236,10 +236,11 @@ lojas:
   - nome: Mercado Livre
     dominio: lista.mercadolivre.com.br
     tipo: mercadolivre
-    somente_oficial: false
+    somente_oficial: true   # só Loja Oficial (nada de revendedor/tralha)
     ativo: false
-    afiliado: ""
+    afiliado: "{url}?matt_word=cotrinmeirellescristiano&matt_tool=76580280"
 
 afiliados_por_dominio:
+  mercadolivre.com.br: "{url}?matt_word=cotrinmeirellescristiano&matt_tool=76580280"
   amazon.com.br: ""
   shop.tiktok.com: ""
