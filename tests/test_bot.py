@@ -218,3 +218,13 @@ def test_exigir_categoria(monkeypatch):
     linhas = catalogo.varrer_loja({"nome": "Americanas", "dominio": "x", "tipo": "vtex", "paginas": 1,
                                    "exigir_categoria": ["beleza", "maquiagem"]}, dt.datetime.now(dt.timezone.utc))
     assert [l["url"] for l in linhas] == ["https://a/2"]
+
+
+def test_nao_maquiagem():
+    from bot.catalogo import categoria_de
+    perf = Oferta("L", "x", "u", True, extra={"produto": "Perfume Good Girl Blush Elixir Eau de Parfum", "categorias": ""})
+    pincel = Oferta("L", "x", "u", True, extra={"produto": "Pincel Power para Blush Real Techniques", "categorias": ""})
+    blush = Oferta("L", "x", "u", True, extra={"produto": "Pó Compacto Duo Blush e Bronzer Vult", "categorias": ""})
+    masc = Oferta("L", "x", "u", True, extra={"produto": "Máscara de Cílios Lash Up", "categorias": ""})
+    assert categoria_de(perf, "Blush") == "Outro" and categoria_de(pincel, "Blush") == "Outro"
+    assert categoria_de(blush, None) == "Blush" and categoria_de(masc, None) == "Máscara de cílios"

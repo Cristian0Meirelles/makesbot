@@ -51,7 +51,18 @@ PAGINAS_SHOPIFY = 8        # 8 x 250 produtos
 LIMPAR_APOS = dt.timedelta(days=2)
 
 
+# não é maquiagem (mesmo que o nome tenha "blush", "batom" etc.)
+NAO_MAQUIAGEM = ["perfume", "parfum", "eau de", "toilette", "colonia", "body splash", "deo ", "desodorante",
+                 "pincel", "pinceis", "esponja", "escova", "hidratante", "shampoo", "condicionador", "sabonete",
+                 "necessaire", "nécessaire", "creme para", "locao", "oleo corporal", "protetor solar", "esmalte",
+                 "tintura", "coloracao", "removedor", "demaquilante", "algodao", "apontador", "espelho", "organizador",
+                 "estojo vazio", "mascara facial", "mascara de argila", "mascara capilar", "serum facial"]
+
+
 def categoria_de(o: Oferta, termo_cat: str | None) -> str:
+    nome = " " + normalizar(o.extra.get("produto") or o.titulo) + " "
+    if any(" " + normalizar(x) in nome for x in NAO_MAQUIAGEM):
+        return "Outro"
     texto = " " + normalizar(f"{o.extra.get('produto','')} {o.extra.get('categorias','')}") + " "
     for pista, cat in PISTAS:
         if f" {pista}" in texto:
