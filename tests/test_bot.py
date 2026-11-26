@@ -164,6 +164,17 @@ def test_link_tiktok_so_no_modo_tiktok():
 
 
 # ---------------------------------------------------------------- catálogo
+def test_skinfinish_por_categoria_sem_blush_no_titulo():
+    from bot.catalogo import categoria_de, linha_catalogo
+    produto = Oferta("MAC Cosmetics", "Skinfinish Colourstruck", "https://example.com/item", False,
+                     extra={"marca": "MAC", "cor": "Film Noir Buff"})
+    cat = categoria_de(produto, None)
+    assert cat == "Blush"
+    assert "blush" in linha_catalogo(produto, cat, dt.datetime.now(dt.timezone.utc), "")["busca"].split()
+    produto.titulo = "Skinfinish Sunstruck Bronzer"
+    assert categoria_de(produto, None) != "Blush"
+
+
 def test_catalogo_linha_e_categoria():
     from bot.catalogo import categoria_de, linha_catalogo
     of = L.ofertas_vtex("Sephora", "sephora.com.br", [dict(VTEX[0], brand="MAC",
