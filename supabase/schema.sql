@@ -264,3 +264,5 @@ on conflict (id) do update set public = true, file_size_limit = 5242880,
 drop policy if exists "upload de fotos" on storage.objects;
 create policy "upload de fotos" on storage.objects for insert to anon, authenticated
   with check (bucket_id = 'fotos');
+
+-- (Atualização 2 — filtros e vitrine: ver supabase/002_vitrine.sql)

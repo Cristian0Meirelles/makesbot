@@ -74,6 +74,14 @@ class SupabaseDB:
             self._req("POST", "catalogo?on_conflict=loja,url", json=linhas[i:i + 500],
                       headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
 
+    def salvar_vitrine(self, linhas: list[dict]):
+        for i in range(0, len(linhas), 500):
+            self._req("POST", "vitrine?on_conflict=grupo", json=linhas[i:i + 500],
+                      headers={"Prefer": "resolution=merge-duplicates,return=minimal"})
+
+    def limpar_vitrine(self, antes: dt.datetime):
+        self._req("DELETE", f"vitrine?atualizado_em=lt.{quote(_iso(antes))}")
+
     def limpar_catalogo(self, antes: dt.datetime):
         self._req("DELETE", f"catalogo?atualizado_em=lt.{quote(_iso(antes))}")
 

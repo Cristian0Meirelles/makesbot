@@ -69,6 +69,7 @@ lojas:
   - nome: Lojas Americanas
     dominio: www.americanas.com.br
     tipo: vtex
+    paginas: 4          # loja gigante: limita para não pegar coisa que não é maquiagem
     afiliado: ""
 
 # ---- Desligadas na busca automática ----

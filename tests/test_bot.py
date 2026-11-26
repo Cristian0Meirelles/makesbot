@@ -184,3 +184,27 @@ def test_vtex_dominio_publico_e_cor_curta():
     o = L.ofertas_vtex("Época", "www.epocacosmeticos.com.br", dados)[0]
     assert o.url.startswith("https://www.epocacosmeticos.com.br/gloss/p")
     assert o.extra["cor"] == "N07 Lilás"
+
+
+# ---------------------------------------------------------------- classificação
+def test_classificacao():
+    from bot.classificar import chave_produto, familia_cor, tom_de_pele
+    assert familia_cor("Ruby Woo") == "Vermelho" and familia_cor("Nude Rosé") == "Nude"
+    assert familia_cor("Velvet Teddy") is None
+    assert tom_de_pele("NC15", "Base") == "Claro" and tom_de_pele("NW45", "Base") == "Escuro"
+    assert tom_de_pele("2.5 Neutral", "Base") == "Médio" and tom_de_pele("Deep 3", "Corretivo") == "Escuro"
+    assert tom_de_pele("Ruby", "Batom") is None
+    assert chave_produto("MAC", "Blush Líquido MAC Strobe Dewy 4,3ml") == chave_produto("MAC", "MAC Strobe Dewy Blush Líquido")
+
+
+def test_vitrine_junta_lojas():
+    from bot.catalogo import linha_catalogo, montar_vitrine
+    t = dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc)
+    mk = lambda loja, nome, cor, preco, disp: linha_catalogo(
+        Oferta(loja, nome, f"https://{loja}/{cor}", disp, "https://img", preco,
+               extra={"marca": "MAC", "produto": nome, "cor": cor}), "Blush", t, "")
+    v = montar_vitrine([mk("A", "Blush Líquido MAC Strobe Dewy 4,3ml", "Lavalite", 150, True),
+                        mk("B", "MAC Strobe Dewy Blush Líquido", "Lavalite", 130, True),
+                        mk("C", "MAC Strobe Dewy Blush Líquido", "Starlite", 100, False)], t)
+    assert len(v) == 1 and v[0]["n_lojas"] == 3 and v[0]["preco_min"] == 130 and v[0]["loja_min"] == "B"
+    assert v[0]["lojas_disponiveis"] == ["A", "B"] and v[0]["n_cores"] == 2

@@ -116,7 +116,8 @@ def main(argv=None) -> int:
         if args.seco:
             atualizar_catalogo(cfg, lambda l: print(f"  {len(l)} itens, ex.: {l[0]['titulo']}"), lambda d: None)
         else:
-            atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo)
+            atualizar_catalogo(cfg, db.salvar_catalogo, db.limpar_catalogo, salvar_vitrine=db.salvar_vitrine,
+                               limpar_vitrine=db.limpar_vitrine)
         return 0
 
     motor = Motor(db, cfg, Notificador(seco=args.seco))
