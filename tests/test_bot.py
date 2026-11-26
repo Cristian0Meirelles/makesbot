@@ -348,3 +348,35 @@ def test_tiktok_pagina_produto_e_linhas():
     linhas = T.montar_linhas(ofs, dt.datetime(2026, 11, 26, tzinfo=dt.timezone.utc))
     assert len(linhas) == 1 and linhas[0]["categoria"] == "Blush" and linhas[0]["loja"] == "TikTok Shop"
     assert linhas[0]["marca"] == "Ruby Rose" and linhas[0]["preco"] == 19.9
+
+
+def test_tiktok_tenta_de_novo_e_avisa(monkeypatch):
+    from bot import tiktok_catalogo as T
+    chamadas, avisos = [], []
+    monkeypatch.setattr(T, "coletar", lambda cfg, agora=None, chrome=False: (chamadas.append(1), ([], False))[1])
+    monkeypatch.setattr(T, "_avisar_problema", lambda cfg, motivo, n, chrome: avisos.append(motivo))
+    monkeypatch.setattr(T.time, "sleep", lambda s: None)
+
+    class DB:
+        lojas = []
+        def salvar_lojas(self, l): self.lojas += l
+    db = DB()
+    assert T.atualizar(db, {"tiktok_catalogo": {"tentativas": 3}}) == 0
+    assert len(chamadas) == 3 and len(avisos) == 1 and db.lojas[-1]["ok"] is False
+
+
+def test_relatorio_saude():
+    from bot import saude
+    agora = dt.datetime(2026, 11, 26, 12, tzinfo=dt.timezone.utc)
+
+    class DB:
+        def lojas_todas(self):
+            return [{"nome": "TikTok Shop", "ok": True, "atualizado_em": "2026-11-24T12:00:00+00:00"},
+                    {"nome": "Océane", "ok": True}, {"nome": "Hinode", "ok": False}]
+        def contar(self, t, f=None): return {"catalogo": 47489, "vitrine": 15012}.get(t, 300)
+        def buscas_vazias_desde(self, d): return [{"termo": "blush film noir", "vezes": 3}]
+        def produtos_sem_oferta(self): return [{"marca": "MAC", "nome": "Powder Blush", "cor": "Film Noir", "links": []}]
+    assunto, texto, prob = saude.montar_relatorio(DB(), agora)
+    assert prob and "problema" in assunto
+    assert "TikTok Shop sem atualizar" in texto and "Hinode" in texto
+    assert "blush film noir" in texto and "MAC Powder Blush Film Noir" in texto and "15.012 produtos" in texto

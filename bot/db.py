@@ -114,6 +114,34 @@ class SupabaseDB:
     def apagar_loja(self, nome: str):
         self._req("DELETE", f"lojas?nome=eq.{quote(nome)}")
 
+    def lojas_todas(self) -> list[dict]:
+        return self._req("GET", "lojas", params={"select": "*"}) or []
+
+    def buscas_vazias_desde(self, desde: dt.datetime, limite: int = 30) -> list[dict]:
+        try:
+            return self._req("GET", "buscas_vazias", params={
+                "ultima": f"gte.{_iso(desde)}", "select": "termo,vezes,ultima",
+                "order": "vezes.desc", "limit": str(limite)}) or []
+        except RuntimeError:
+            return []  # SQL 003 ainda não foi rodado
+
+    def contar(self, tabela: str, filtro: dict | None = None) -> int | None:
+        r = self.s.get(f"{self.base}/{tabela}", params={"select": "*", **(filtro or {})},
+                       headers={"Prefer": "count=exact", "Range": "0-0"}, timeout=30)
+        try:
+            return int(r.headers.get("content-range", "*/").split("/")[-1])
+        except ValueError:
+            return None
+
+    def produtos_sem_oferta(self, limite: int = 30) -> list[dict]:
+        """Produtos pedidos no radar que ainda não acharam nenhuma loja."""
+        try:
+            return self._req("GET", "produtos", params={
+                "ativo": "eq.true", "disponivel": "is.false", "select": "marca,nome,cor,links,criado_em",
+                "order": "criado_em.desc", "limit": str(limite)}) or []
+        except RuntimeError:
+            return []
+
     def limpar_catalogo(self, antes: dt.datetime):
         self._req("DELETE", f"catalogo?atualizado_em=lt.{quote(_iso(antes))}")
 

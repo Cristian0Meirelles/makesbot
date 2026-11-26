@@ -258,6 +258,9 @@ tiktok_catalogo:
   espera_entre_cliques_seg: 2.0
   detalhar_max: 40          # produtos sem marca reconhecida que ele abre pra ler a marca
   esperar_verificacao_min: 10   # no robô do PC: quanto tempo espera você resolver o quebra-cabeça do TikTok
+  tentativas: 2                 # se falhar, tenta de novo...
+  espera_entre_tentativas_min: 10   # ...depois de X minutos
+  minimo_produtos: 100          # abaixo disso manda aviso pro ADMIN_EMAIL (precisa de nova versão do bot?)
   marcas_extra: []          # marcas que ele ainda não reconhece pelo nome, ex.: [Minha Marca]
   categorias:
     lipstick-lip-gloss/601534: Batom

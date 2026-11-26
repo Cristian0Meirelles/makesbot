@@ -302,16 +302,54 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
     return linhas, completo
 
 
+def _avisar_problema(cfg: dict, motivo: str, n: int, chrome: bool):
+    from .notificar import Notificador
+    onde = "robô do PC (Chrome)" if chrome else "GitHub Actions"
+    conf = cfg.get("tiktok_catalogo") or {}
+    texto = (f"O robô do TikTok Shop não conseguiu atualizar direito ({onde}).\n\n"
+             f"Motivo: {motivo}\nProdutos coletados: {n}\n\n"
+             "O que fazer:\n"
+             "1. Veja o log da execução (GitHub → Actions → \"TikTok Shop (2x por dia)\").\n"
+             "2. Se o motivo for verificação/CAPTCHA, rode o robô do PC: robo-tiktok\\rodar.bat.\n"
+             "3. Se aparecer 0 produtos sem bloqueio, o TikTok provavelmente mudou o site: "
+             "é hora de fazer uma nova versão do bot (bot/tiktok_catalogo.py).\n\n"
+             f"Mínimo esperado por rodada: {conf.get('minimo_produtos', 100)} produtos.")
+    Notificador().alerta_admin(f"TikTok Shop: {motivo}", texto)
+
+
 def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -> int:
-    """Salva o catálogo do TikTok no banco e refaz a vitrine dos produtos afetados."""
+    """Salva o catálogo do TikTok no banco e refaz a vitrine dos produtos afetados.
+
+    Tenta de novo se falhar (config: tentativas, espera_entre_tentativas_min) e, se no fim
+    ainda vier pouco/nada, manda um aviso pro ADMIN_EMAIL/ADMIN_WHATSAPP."""
     from .catalogo import montar_vitrine
 
-    agora = agora or dt.datetime.now(dt.timezone.utc)
-    linhas, completo = coletar(cfg, agora, chrome=chrome)
+    conf = cfg.get("tiktok_catalogo") or {}
+    tentativas = max(1, int(conf.get("tentativas", 2)))
+    espera = float(conf.get("espera_entre_tentativas_min", 10)) * 60
+    minimo = int(conf.get("minimo_produtos", 100))
+
+    linhas, completo, erro = [], False, ""
+    for t in range(1, tentativas + 1):
+        agora = dt.datetime.now(dt.timezone.utc)
+        try:
+            linhas, completo = coletar(cfg, agora, chrome=chrome)
+            erro = ""
+        except Exception as e:  # noqa: BLE001
+            linhas, completo, erro = [], False, f"erro no robô: {e}"
+            log.exception("TikTok: tentativa %d falhou", t)
+        if completo and len(linhas) >= minimo:
+            break
+        if t < tentativas:
+            log.warning("TikTok: tentativa %d/%d trouxe %d produtos (completo=%s). Tentando de novo em %.0f min.",
+                        t, tentativas, len(linhas), completo, espera / 60)
+            time.sleep(espera)
+
     if not linhas:
         log.warning("TikTok: nada coletado; o catálogo anterior fica como está")
         db.salvar_lojas([{"nome": LOJA, "dominio": "shop.tiktok.com", "tipo": "catálogo + links",
                           "frequencia": "2x por dia", "ok": False, "atualizado_em": agora.isoformat()}])
+        _avisar_problema(cfg, erro or "o TikTok bloqueou (verificação/CAPTCHA) ou o site mudou", 0, chrome)
         return 0
 
     antigos = db.catalogo_da_loja(LOJA)
@@ -330,4 +368,8 @@ def atualizar(db, cfg: dict, agora: dt.datetime | None = None, chrome: bool = Fa
                       "frequencia": "2x por dia", "ok": completo, "atualizado_em": agora.isoformat()}])
     log.info("TikTok: %d itens salvos, vitrine com %d produtos atualizada%s", len(linhas), len(vit),
              "" if completo else " (coleta parcial por bloqueio)")
+    if not completo:
+        _avisar_problema(cfg, "coleta parcial (o TikTok pediu verificação no meio)", len(linhas), chrome)
+    elif len(linhas) < minimo:
+        _avisar_problema(cfg, f"poucos produtos ({len(linhas)})", len(linhas), chrome)
     return len(linhas)
