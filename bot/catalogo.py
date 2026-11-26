@@ -43,7 +43,7 @@ MARCAS = ["MAC", "Fenty Beauty", "Dior", "Too Faced", "Benefit", "NARS", "Rare B
           "Charlotte Tilbury", "Urban Decay", "Clinique", "Lancôme", "Estée Lauder", "Make Up For Ever", "Bobbi Brown",
           "Bruna Tavares", "Boca Rosa", "Vult", "Ruby Rose", "Quem Disse Berenice", "Océane", "Make B", "Payot",
           "Dailus", "Mari Maria", "Latika", "Vizzela", "Franciny Ehlke", "Melu", "Catharine Hill", "Max Love",
-          "Tracta", "NYX", "Maybelline", "L'Oréal", "Revlon", "Eudora", "Natura", "Avon", "Sephora Collection",
+          "Tracta", "NYX", "Maybelline", "Loreal", "Revlon", "Eudora", "Natura", "Avon", "Sephora Collection",
           "Kylie", "Anastasia Beverly Hills", "Givenchy", "Yves Saint Laurent", "Armani", "Shiseido", "Elf",
           "Makiê", "Nina Secrets", "Pausa Para Feminices", "Karen Bachini", "Jequiti", "Hinode", "Avon"]
 PAGINAS_POR_TERMO = 20     # até 20 x 50 = 1000 produtos por tipo/marca em cada loja VTEX
