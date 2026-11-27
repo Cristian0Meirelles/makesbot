@@ -111,6 +111,7 @@ def test_cadastro_exige_codigo_confirmado():
         page.goto("https://voltou.test/conta.html")
         page.locator("#alternar").click()
         page.locator("#email").fill("cliente@example.org")
+        page.locator("#telefoneConta").fill("11900000000")
         for campo in ["senha", "confirmacao"]:
             page.locator("#" + campo).fill("segredo-exemplo")
         page.locator("#enviar").click()

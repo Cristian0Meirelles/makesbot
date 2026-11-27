@@ -655,16 +655,16 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
           </fieldset>
           <fieldset>
             <legend><span class="num">3</span>Onde te avisamos?</legend>
+            <div class="wpp-box on">
+              <div class="campo"><label for="whatsapp">WhatsApp com DDD (obrigatório)</label><input id="whatsapp" type="tel" autocomplete="tel-national" required maxlength="20" placeholder="(11) 99999-9999"></div>
+              <p>Abra a conversa com o CallMeBot e toque em enviar. Ele responde pelo WhatsApp com o código para ativar seus alertas.</p>
+              <a id="ativarWpp" class="btn btn-wpp btn-sm" href="https://wa.me/34666387536?text=I%20allow%20callmebot%20to%20send%20me%20messages" target="_blank" rel="noopener noreferrer">Abrir WhatsApp e pedir código</a>
+              <div class="campo" style="margin-top:12px"><label for="chave">Código recebido no WhatsApp</label><input id="chave" type="password" inputmode="numeric" pattern="[0-9]+" maxlength="20" required placeholder="Cole seu código aqui"></div>
+              <small>Já tem um código para este número? Pode usá-lo aqui. <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">Ajuda com a ativação</a></small>
+            </div>
             <div class="duas">
               <div class="campo"><label for="pessoa">Seu nome</label><input id="pessoa" maxlength="60" placeholder="Como te chamamos?"></div>
-              <div class="campo"><label for="email">E-mail</label><input id="email" type="email" maxlength="120" placeholder="voce@email.com"></div>
-            </div>
-            <label class="toggle"><input type="checkbox" id="querWpp"> Quero receber também no WhatsApp</label>
-            <div class="wpp-box" id="wppBox">
-              <div class="campo" style="margin-bottom:8px"><label for="whatsapp">Seu WhatsApp (com DDD)</label><input id="whatsapp" inputmode="tel" maxlength="20" placeholder="(11) 99999-9999"></div>
-              <p>Para receber alertas, informe o código que o CallMeBot enviou ao seu número. Novas ativações dependem de vagas no provedor.</p>
-              <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">Consultar ativação no CallMeBot</a>
-              <div class="campo" style="margin:12px 0 0"><label for="chave">Código recebido (APIKEY)</label><input id="chave" inputmode="numeric" maxlength="20" placeholder="Ex.: 1234567"></div>
+              <div class="campo"><label for="email">Receber também por e-mail (opcional)</label><input id="email" type="email" maxlength="120" placeholder="voce@email.com"></div>
             </div>
           </fieldset>
           <label class="consent"><input type="checkbox" id="aceite" required> Aceito receber avisos sobre este produto. Meus dados são usados só para isso e posso cancelar quando quiser.</label>

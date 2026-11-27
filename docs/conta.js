@@ -25,6 +25,7 @@ function abrir(etapa, email = "") {
   el("perfil").hidden = etapa !== "perfil";
   el("repetir").hidden = !cadastro;
   el("confirmacao").required = cadastro;
+  el("telefoneConta").required = cadastro;
   el("senha").autocomplete = cadastro ? "new-password" : "current-password";
   el("senha").minLength = cadastro ? 8 : 1;
   el("enviar").textContent = cadastro ? "Criar conta e verificar e-mail" : "Entrar";
@@ -66,7 +67,11 @@ el("acesso").onsubmit = e => {
   }
   executar(async () => {
     if (modo === "cadastro") {
-      await auth("signup?redirect_to=" + retorno, {email, password});
+      const telefone = el("telefoneConta").value.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+      if (!/^\d{10,11}$/.test(telefone)) {
+        el("mensagem").textContent = "Informe seu WhatsApp com DDD."; el("telefoneConta").focus(); return;
+      }
+      await auth("signup?redirect_to=" + retorno, {email, password, data: {whatsapp: "+55" + telefone}});
       abrir("verificar", email);
     } else {
       try {

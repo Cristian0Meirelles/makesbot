@@ -89,6 +89,8 @@ def linha_catalogo(o: Oferta, categoria: str, agora: dt.datetime, afiliado: str)
     if normalizar(marca) in {"mac", "m a c", "mac cosmetics", "m a c cosmetics"}:
         marca = "MAC"
         produto = re.sub(r"m[.·]a[.·]c", "MAC", produto, flags=re.I)
+    if marca == "MAC" and categoria == "Batom" and normalizar(produto) == "batom hidratante brilhante lustreglass sheer shine":
+        produto = "Batom Hidratante Lustreglass Mac Sheershine"
     if marca == "MAC" and categoria == "Blush":
         if chave_produto(marca, produto) in {"mac|blush powder", "mac|blush colourstruck po skinfinish"}:
             produto = "Powder Blush"

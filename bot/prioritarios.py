@@ -95,9 +95,24 @@ def powder_blush(loja):
     return []
 
 
-def batons_beleza():
+LUSTREGLASS = "Batom Hidratante Lustreglass Mac Sheershine"
+MAC_LUSTREGLASS = ("https://www.maccosmetics.com.br/product/13854/146511/produtos/maquiagem/"
+                   "labios/batom/batom-hidratante-brilhante-lustreglass-sheer-shine")
+BELEZA_LUSTREGLASS = "https://www.belezanaweb.com.br/produto/mac-lustreglass-sheershine-alone-time-batom-3g/"
+
+
+def alone_time_mac():
+    saida = []
+    for oferta in verificar_link("MAC Cosmetics", MAC_LUSTREGLASS):
+        if normalizar(oferta.extra.get("cor")) == "alone time":
+            oferta.extra.update(categoria="Batom", produto=LUSTREGLASS)
+            saida.append(oferta)
+    return saida
+
+
+def batons_beleza(url="https://www.belezanaweb.com.br/produto/mac-macximal-satin-film-noir-batom-acetinado-35g",
+                 produto="Batom Satin MAC MACximal", termos=("macximal", "satin")):
     loja = "Beleza na Web"
-    url = "https://www.belezanaweb.com.br/produto/mac-macximal-satin-film-noir-batom-acetinado-35g"
     _, html = _pagina_cadastrada(url)
     saida = {}
     from .lojas import _nos
@@ -108,7 +123,7 @@ def batons_beleza():
             continue
         for item in _nos(dados):
             nome = normalizar(item.get("name")).replace("m a c", "mac")
-            if not {"batom", "mac", "macximal", "satin"}.issubset(nome.split()):
+            if not {"batom", "mac", *termos}.issubset(nome.split()):
                 continue
             cor, link = item.get("color"), item.get("url") or ""
             oferta = item.get("offers")
@@ -117,13 +132,15 @@ def batons_beleza():
             if not isinstance(oferta, dict) or oferta.get("seller", {}).get("name") != loja:
                 continue
             for o in ofertas_de_pagina(loja, link, '<script type="application/ld+json">' + json.dumps(item) + '</script>'):
-                o.extra.update(marca="MAC", produto="Batom Satin MAC MACximal", cor=cor, categoria="Batom")
+                o.extra.update(marca="MAC", produto=produto, cor=cor, categoria="Batom")
                 saida[o.url] = o
     return list(saida.values())
 
 
 def atualizar():
     fontes = [
+        ("MAC · Alone Time", alone_time_mac),
+        ("Beleza na Web · Lustreglass", lambda: batons_beleza(BELEZA_LUSTREGLASS, LUSTREGLASS, ("lustreglass",))),
         ("Época Cosméticos", epoca),
         ("Beleza na Web · batons", batons_beleza),
         *((loja, lambda loja=loja: powder_blush(loja)) for loja in PAGINAS),

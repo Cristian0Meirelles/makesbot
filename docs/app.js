@@ -693,7 +693,11 @@ function renderLojas() {
 $("#cats").innerHTML = CATEGORIAS.map((c, i) => `<label><input type="radio" name="cat" value="${esc(c)}"${i === 0 ? " checked" : ""}><span>${esc(c)}</span></label>`).join("");
 $("#marcas").innerHTML = MARCAS.map(m => `<option value="${esc(m)}">`).join("");
 
-$("#querWpp").onchange = e => $("#wppBox").classList.toggle("on", e.target.checked);
+$("#ativarWpp").onclick = e => {
+  if (!/^\d{10,11}$/.test($("#whatsapp").value.replace(/\D/g, ""))) {
+    e.preventDefault(); $("#whatsapp").focus(); mostrarErro("Informe seu WhatsApp com DDD antes de pedir o código.");
+  } else mostrarErro("");
+};
 $("#whatsapp").oninput = e => { let d = e.target.value.replace(/\D/g, "").slice(0, 13); if (d.startsWith("55") && d.length > 11) d = d.slice(2);
   e.target.value = d.length > 6 ? `(${d.slice(0,2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}` : d.length > 2 ? `(${d.slice(0,2)}) ${d.slice(2)}` : d; };
 
@@ -745,19 +749,18 @@ function mostrarErro(msg) { const e = $("#erro"); e.textContent = msg; e.classLi
 $("#form").onsubmit = async e => {
   e.preventDefault(); mostrarErro("");
   const v = id => $("#" + id).value.trim();
-  const querWpp = $("#querWpp").checked, wpp = v("whatsapp").replace(/\D/g, "");
+  const wpp = v("whatsapp").replace(/\D/g, "");
   if (!v("marca") || !v("nome")) return mostrarErro("Conta pra gente a marca e o nome do produto.");
-  if (!v("email") && !(querWpp && wpp)) return mostrarErro("Coloque um e-mail ou um WhatsApp para receber o aviso.");
+  if (!/^\d{10,11}$/.test(wpp)) return mostrarErro("Informe seu WhatsApp com DDD.");
   if (v("email") && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v("email"))) return mostrarErro("Esse e-mail parece incompleto.");
-  if (querWpp && wpp && wpp.length < 10) return mostrarErro("Coloque o WhatsApp com DDD.");
-  if (querWpp && wpp && !v("chave") && !v("email")) return mostrarErro("Informe o código do CallMeBot para usar o WhatsApp, ou cadastre um e-mail.");
+  if (!/^\d{1,20}$/.test(v("chave"))) return mostrarErro("Peça o código pelo botão do WhatsApp e cole a resposta do CallMeBot.");
   if (v("link") && !/^https?:\/\//i.test(v("link"))) return mostrarErro("O link precisa começar com https://");
   if (!$("#aceite").checked) return mostrarErro("Marque a caixinha de aceite para continuarmos.");
 
   const btn = $("#btnEnviar"); btn.disabled = true; btn.innerHTML = '<span class="carregando"></span> Criando alerta…';
   try {
     const dados = {p_categoria: $("input[name=cat]:checked")?.value || "Outro", p_marca: v("marca"), p_nome: v("nome"), p_cor: v("cor"),
-      p_link: v("link"), p_pessoa: v("pessoa"), p_email: v("email"), p_whatsapp: querWpp ? wpp : "", p_callmebot: querWpp ? v("chave") : ""};
+      p_link: v("link"), p_pessoa: v("pessoa"), p_email: v("email"), p_whatsapp: wpp, p_callmebot: v("chave")};
     let res;
     if (DEMO) { await new Promise(r => setTimeout(r, 700)); res = {token: "demo"}; }
     else { dados.p_foto_url = await enviarFoto(); res = await rpc("criar_alerta", dados); }
@@ -765,8 +768,7 @@ $("#form").onsubmit = async e => {
     $("#formCorpo").hidden = true;
     $("#formOk").hidden = false;
     $("#formOk").innerHTML = `<div class="sucesso"><div class="ok">✓</div><h3>Alerta criado!</h3>
-      <p>Estamos de olho em <b>${esc(nomeP)}</b>.<br>Assim que voltar, você recebe ${[dados.p_email && "um e-mail", dados.p_whatsapp && dados.p_callmebot && "uma mensagem no WhatsApp"].filter(Boolean).join(" e ") || "o aviso"} com o link da loja.</p>
-      ${dados.p_whatsapp && !dados.p_callmebot ? `<p style="font-size:13px;color:#9b2c45">Lembrete: sem o código do WhatsApp, o aviso vai só por e-mail.</p>` : ""}
+      <p>Estamos de olho em <b>${esc(nomeP)}</b>.<br>Assim que voltar, você recebe ${["uma mensagem no WhatsApp", dados.p_email && "um e-mail"].filter(Boolean).join(" e ") || "o aviso"} com o link da loja.</p>
       <button class="btn btn-linha" id="novoAlerta" type="button" style="margin-top:10px">Criar outro alerta</button></div>`;
     $("#novoAlerta").onclick = () => { $("#formOk").hidden = true; $("#formCorpo").hidden = false; ["nome", "cor", "link"].forEach(i => $("#" + i).value = ""); fotoBlob = null; $("#fotoPrev").innerHTML = "📷"; };
     if (!DEMO) carregarRadar();

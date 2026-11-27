@@ -15,7 +15,7 @@ input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #b650
 <main><h1 id="titulo">Entrar na minha conta</h1>
 <form id="acesso"><label for="email">E-mail</label><input id="email" type="email" required autocomplete="username">
 <label for="senha">Senha</label><input id="senha" type="password" required autocomplete="current-password">
-<div id="repetir" hidden><label for="confirmacao">Confirme sua senha</label><input id="confirmacao" type="password" autocomplete="new-password"><small>Use pelo menos oito caracteres.</small></div>
+<div id="repetir" hidden><label for="telefoneConta">WhatsApp com DDD</label><input id="telefoneConta" type="tel" autocomplete="tel-national" maxlength="20"><small>O código para confirmar a conta chega por e-mail.</small><label for="confirmacao">Confirme sua senha</label><input id="confirmacao" type="password" autocomplete="new-password"><small>Use pelo menos oito caracteres.</small></div>
 <button class="primary" id="enviar">Entrar</button><button class="link" id="alternar" type="button">Criar conta</button></form>
 <form id="verificacao" hidden><p>Confira o e-mail enviado para <strong id="destino"></strong>. Digite o código abaixo ou use o link de confirmação, caso ele apareça na mensagem.</p>
 <label for="codigo">Código de verificação</label><input id="codigo" inputmode="numeric" pattern="[0-9]{6,10}" maxlength="10" autocomplete="one-time-code" required>
