@@ -12,7 +12,7 @@ const urlSegura = u => /^https?:\/\//i.test(u || "") ? u : "#";
 const tempo = iso => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000);
   return m < 2 ? "agora mesmo" : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.round(m/60)} h` : `há ${Math.round(m/1440)} dia(s)`; };
 
-const CATEGORIAS = ["Blush","Batom","Gloss","Lip tint","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador","Outro"];
+const CATEGORIAS = ["Blush","Batom","Gloss","Lip tint","Óleo labial","Balm labial","Lápis de olhos","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador","Outro"];
 const MARCAS = ["MAC","Fenty Beauty","Rare Beauty","Charlotte Tilbury","NARS","Dior","Benefit","Too Faced","Huda Beauty","Urban Decay","Clinique","Lancôme","Estée Lauder","Make Up For Ever","Sephora Collection","Bruna Tavares","Boca Rosa Beauty","Mari Maria Makeup","Vult","Ruby Rose","Quem Disse, Berenice?","Océane","Natura","Eudora","Boticário","Make B.","Payot","Dailus","Fran by Franciny Ehlke","Melu","Tracta","Max Love","Catharine Hill","Hinode"];
 
 /* ------------------------------------------------ fotos (sempre reais; sem foto = aviso neutro) */
@@ -268,6 +268,51 @@ function oficialDe(marca) {
 const SELO_OFICIAL = '<span class="selo-oficial">✓ Site oficial</span>';
 let tomFiltro = "";
 const corFalsa = c => !c || /^(\d+([.,]\d+)?\s*(un|und|unid|unidade|unidades|ml|g|gr|kg|oz)?|unic[oa]|padr[aã]o|u|default|default title|sem cor)$/i.test(String(c).trim());
+let paletasPromise;
+async function sugerirMesmaCor(area, ref, cat, cor) {
+  if (!cor || !ref.grupo) return;
+  try {
+    paletasPromise ||= fetch("amostras-cor.json").then(r => {
+      if (!r.ok) throw new Error();
+      return r.json();
+    }).catch(() => { paletasPromise = null; return {}; });
+    const paletas = await paletasPromise;
+    const codigo = (grupo, tom) => /^#[0-9a-f]{6}$/i.test(tom || "") ? tom.slice(1).toLowerCase() : paletas[grupo]?.tons?.[norm(tom)];
+    const hex = codigo(ref.grupo, cor);
+    if (!hex) return;
+    const grupos = Object.keys(paletas).filter(g => g !== ref.grupo && Object.values(paletas[g].tons).includes(hex));
+    const filtros = ["cor.ilike.#" + hex];
+    if (grupos.length) filtros.push("grupo.in.(" + grupos.map(g => '"' + g.replace(/["\\]/g, c => "\\" + c) + '"').join(",") + ")");
+    let candidatos;
+    if (DEMO) candidatos = demoCatalogo();
+    else {
+      const p = new URLSearchParams({select:"produto,marca,grupo,cor,loja,preco,url,categoria,disponivel", categoria:"eq." + cat,
+        disponivel:"eq.true", or:"(" + filtros.join(",") + ")", order:"preco.asc.nullslast,id.asc", limit:500});
+      candidatos = [];
+      for (;;) {
+        p.set("offset", candidatos.length);
+        const lote = await api("catalogo?" + p);
+        candidatos.push(...lote);
+        if (lote.length < 500) break;
+      }
+    }
+    const modelos = new Map();
+    for (const r of candidatos) {
+      if (r.categoria !== cat || !r.disponivel || r.grupo === ref.grupo || codigo(r.grupo, r.cor) !== hex || !linkProduto(r.url)) continue;
+      if (paletas[r.grupo]?.fonte && paletas[r.grupo].fonte === paletas[ref.grupo]?.fonte) continue;
+      const anterior = modelos.get(r.grupo);
+      if (!anterior || (r.preco || Infinity) < (anterior.preco || Infinity)) modelos.set(r.grupo, r);
+    }
+    if (!modelos.size || !area.isConnected) return;
+    const ofertas = [...modelos.values()].sort((a,b) => (a.preco || Infinity) - (b.preco || Infinity)).slice(0, 4);
+    area.innerHTML = `<h3>Alternativas em estoque</h3><p>Mesma cor na amostra digital. O acabamento pode variar.</p>
+      ${ofertas.map(r => `<div class="linha-loja"><span class="amostra" style="background-color:#${hex}"></span>
+        <div><strong>${esc(r.produto)}</strong><div>${esc(r.marca)} · ${esc(r.cor)} · ${esc(r.loja)}</div></div>
+        <b>${brl(r.preco)}</b><a class="btn btn-linha btn-sm" href="${esc(r.url)}" target="_blank" rel="noopener">Ver produto</a></div>`).join("")}`;
+    area.hidden = false;
+  } catch { /* A comparação principal continua disponível. */ }
+}
+
 async function abrirComparacao(g, cat, corEscolhida) {
   g.linhas.forEach(r => { if (corFalsa(r.cor)) r.cor = null; });
   const base = g.tipo === "produto" ? g.linhas : g.linhas.filter(r => (r.categoria || "Outro") === cat);
@@ -351,10 +396,12 @@ async function abrirComparacao(g, cat, corEscolhida) {
         <div class="acoes-produto">
           <button class="btn btn-rosa" id="btnAvisar">${disp.length ? "Me avisa se esgotar e voltar" : "Me avisa quando voltar"}</button>
         </div>
+        <section class="alternativas" hidden></section>
         <div class="atualizado">Cada horário indica a última consulta bem-sucedida àquela oferta. O catálogo tem atualização diária.</div>
       </div>
     </div></div>`;
   const raiz = alvo();
+  if (!disp.length && temCores) sugerirMesmaCor(raiz.querySelector(".alternativas"), ref, cat, corNome);
 
   raiz.querySelectorAll(".cor").forEach(b => b.onclick = () => abrirComparacao(g, cat, b.dataset.k));
   raiz.querySelectorAll("[data-tom]").forEach(b => b.onclick = () => { tomFiltro = b.dataset.tom; abrirComparacao(g, cat, corAtual); });
@@ -407,7 +454,7 @@ $("#modalProduto").onclick = e => { if (e.target.id === "modalProduto") fecharPr
 addEventListener("keydown", e => { if (e.key === "Escape") fecharProduto(); });
 
 /* ------------------------------------------------ produto que não temos */
-const PISTAS_CAT = [["lip tint","Lip tint"],["tint","Lip tint"],["gloss","Gloss"],["lapis de boca","Lápis labial"],["lapis labial","Lápis labial"],["batom","Batom"],["blush","Blush"],["iluminador","Iluminador"],["bronzer","Bronzer"],["contorno","Contorno"],["corretivo","Corretivo"],["primer","Primer"],["fixador","Fixador"],["base","Base"],["po","Pó"],["paleta","Sombra"],["sombra","Sombra"],["mascara","Máscara de cílios"],["rimel","Máscara de cílios"],["delineador","Delineador"],["sobrancelha","Sobrancelha"]];
+const PISTAS_CAT = [["lip oil","Óleo labial"],["oleo labial","Óleo labial"],["lip balm","Balm labial"],["balm labial","Balm labial"],["lapis de olho","Lápis de olhos"],["lapis de olhos","Lápis de olhos"],["lip tint","Lip tint"],["tint","Lip tint"],["gloss","Gloss"],["lapis de boca","Lápis labial"],["lapis labial","Lápis labial"],["batom","Batom"],["blush","Blush"],["iluminador","Iluminador"],["bronzer","Bronzer"],["contorno","Contorno"],["corretivo","Corretivo"],["primer","Primer"],["fixador","Fixador"],["base","Base"],["po","Pó"],["paleta","Sombra"],["sombra","Sombra"],["mascara","Máscara de cílios"],["rimel","Máscara de cílios"],["delineador","Delineador"],["sobrancelha","Sobrancelha"]];
 function pedirProduto(termo) {
   const t = " " + norm(termo) + " ";
   const marca = [...MARCAS].sort((a, b) => b.length - a.length).find(m => t.includes(" " + norm(m) + " ")) || "";
@@ -444,7 +491,7 @@ function preencherAlerta({categoria, marca, nome, cor}) {
 
 /* ------------------------------------------------ catálogo com filtros e páginas */
 const POR_PAGINA = matchMedia("(max-width:700px)").matches ? 12 : 24;
-const TIPOS = ["Blush","Batom","Gloss","Lip tint","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador"];
+const TIPOS = ["Blush","Batom","Gloss","Lip tint","Óleo labial","Balm labial","Lápis de olhos","Lápis labial","Base","Corretivo","Pó","Iluminador","Bronzer","Contorno","Sombra","Máscara de cílios","Delineador","Sobrancelha","Primer","Fixador"];
 const CORES = [["Nude","#d8b49c"],["Rosa","#e68aa6"],["Vermelho","#c7202f"],["Vinho","#6d1a33"],["Marrom","#7b4a30"],["Coral e pêssego","#f28c6b"],["Roxo","#8c58b8"],["Dourado e bronze","#c9a04a"],["Prata","#c4c6cc"],["Preto","#1f1a1c"],["Branco","#ffffff"],["Transparente","#f3eeea"],["Azul e verde","#2f8f8a"]];
 const TONS = ["Claro","Médio","Escuro"];
 const filtrosIniciais = () => ({busca: "", marca: "", ordem: "relevancia", disp: false, tipo: "", lojas: [], cores: [], tons: [], pagina: 1});

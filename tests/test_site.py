@@ -125,3 +125,37 @@ def test_cadastro_exige_codigo_confirmado():
         page.locator("#verificacao button.primary").click()
         pw.expect(page.locator("#perfil")).to_be_visible()
         browser.close()
+
+
+def test_alternativa_so_com_mesma_amostra_em_estoque():
+    ref = dict(grupo="batom", categoria="Batom", loja="A", marca="MAC", produto="Batom Original",
+               cor="Alone Time", disponivel=False, busca="batom original alone time", url="https://loja.test/original")
+    rows = [ref, dict(ref, grupo="equivalente", produto="Outro modelo", marca="Outra marca", disponivel=True,
+                      cor="Malva 12", busca="outro modelo malva", url="https://loja.test/malva"),
+            dict(ref, grupo="diferente", produto="Mesmo nome de cor", disponivel=True),
+            dict(ref, grupo="esgotado", produto="Outra opção esgotada")]
+    paletas = {r["grupo"]: {"fonte": r["grupo"], "tons": {r["cor"].lower(): "966158" if r["grupo"] != "diferente" else "996158"}} for r in rows}
+    with pw.sync_playwright() as driver:
+        browser = driver.chromium.launch()
+        p = browser.new_page()
+        def recurso(route):
+            url = route.request.url
+            if not url.startswith("https://voltou.test/"):
+                return route.abort()
+            nome = url.removeprefix("https://voltou.test/") or "index.html"
+            if nome == "config.js":
+                return route.fulfill(content_type="application/javascript", body="window.VOLTOU_CONFIG={}")
+            if nome == "demo.json":
+                return route.fulfill(json={"catalogo": rows, "lojas": []})
+            if nome == "amostras-cor.json":
+                return route.fulfill(json=paletas)
+            if (DOCS / nome).is_file():
+                return route.fulfill(path=DOCS / nome)
+            route.fulfill(status=404)
+        p.route("**/*", recurso)
+        p.goto("https://voltou.test/")
+        p.locator("#gradeCat .card").filter(has_text="Batom Original").click()
+        pw.expect(p.locator(".alternativas a")).to_have_count(1)
+        pw.expect(p.locator(".alternativas")).to_contain_text("Outra marca")
+        pw.expect(p.locator(".alternativas a")).to_have_attribute("href", "https://loja.test/malva")
+        browser.close()

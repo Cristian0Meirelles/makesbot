@@ -455,3 +455,12 @@ def test_batom_hidratante_aparece_no_catalogo():
     from bot.util import Oferta
     assert categoria_de(Oferta("Loja", "Batom Hidratante Lustreglass", "https://loja/p", False), None) == "Batom"
     assert categoria_de(Oferta("Loja", "Hidratante corporal", "https://loja/p", False), None) == "Outro"
+
+
+def test_recupera_maquiagem_em_outro_sem_incluir_acessorios():
+    from bot.catalogo import categoria_recuperada
+    assert categoria_recuperada("Maybelline Base Hidratante 301") == "Base"
+    assert categoria_recuperada("Hidratante Labial Vult Lip Oil") == "Óleo labial"
+    assert categoria_recuperada("Lápis de Olhos Check Point") == "Lápis de olhos"
+    assert categoria_recuperada("CC Cream Siàge Reconstroi os Fios") is None
+    assert categoria_recuperada("Pincel para aplicar BB Cream") is None
