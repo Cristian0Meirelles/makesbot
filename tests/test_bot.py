@@ -464,3 +464,13 @@ def test_recupera_maquiagem_em_outro_sem_incluir_acessorios():
     assert categoria_recuperada("Lápis de Olhos Check Point") == "Lápis de olhos"
     assert categoria_recuperada("CC Cream Siàge Reconstroi os Fios") is None
     assert categoria_recuperada("Pincel para aplicar BB Cream") is None
+
+
+def test_numero_de_cor_nao_e_tamanho():
+    import datetime as dt
+    from bot.catalogo import linha_catalogo
+    from bot.util import Oferta
+    agora = dt.datetime.now(dt.timezone.utc)
+    for cor in ("001", "2.5", "NC42"):
+        o = Oferta("Loja", "Base", "https://loja/p", True, extra={"cor": cor})
+        assert linha_catalogo(o, "Base", agora, "")["cor"] == cor

@@ -116,7 +116,7 @@ def linha_catalogo(o: Oferta, categoria: str, agora: dt.datetime, afiliado: str)
         marca = None
     produto = (o.extra.get("produto") or o.titulo).strip()
     cor = (o.extra.get("cor") or "").strip() or None
-    if cor and re.fullmatch(r"(\d+([.,]\d+)?\s*(un|und|unid|unidades?|ml|g|gr|kg|oz)?|[uú]nic[oa]|padr[aã]o|u|default( title)?|sem cor)", cor, re.I):
+    if cor and re.fullmatch(r"(\d+([.,]\d+)?\s*(un|und|unid|unidades?|ml|g|gr|kg|oz)|[uú]nic[oa]|padr[aã]o|u|default( title)?|sem cor)", cor, re.I):
         cor = None
     nome_loja, cor_loja = produto, cor
     # Preserva o título do anúncio e indexa também a grafia usada pela loja.
@@ -241,7 +241,7 @@ def montar_vitrine(linhas: list[dict], agora: dt.datetime) -> list[dict]:
 def atualizar_catalogo(cfg: dict, salvar, limpar, agora: dt.datetime | None = None,
                        salvar_vitrine=None, limpar_vitrine=None, extras_vitrine=None) -> int:
     agora = agora or dt.datetime.now(dt.timezone.utc)
-    lojas = [l for l in cfg.get("lojas", []) if l.get("ativo", True)]
+    lojas = [l for l in cfg.get("lojas", []) if l.get("ativo", True) and l.get("tipo") != "mercadolivre"]
     total = 0
     todas: list[dict] = []
     with ThreadPoolExecutor(4) as ex:

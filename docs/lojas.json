@@ -1,142 +1,177 @@
 [
   {
     "nome": "Zattini",
-    "dominio": "www.zattini.com.br"
+    "dominio": "www.zattini.com.br",
+    "monitorada": true
   },
   {
     "nome": "Época Cosméticos",
-    "dominio": "www.epocacosmeticos.com.br"
+    "dominio": "www.epocacosmeticos.com.br",
+    "monitorada": true
   },
   {
     "nome": "Océane",
-    "dominio": "www.oceane.com.br"
+    "dominio": "www.oceane.com.br",
+    "monitorada": true
   },
   {
     "nome": "Mari Maria Makeup",
-    "dominio": "www.marimariamakeup.com"
+    "dominio": "www.marimariamakeup.com",
+    "monitorada": true
   },
   {
     "nome": "Hinode",
-    "dominio": "www.hinode.com.br"
+    "dominio": "www.hinode.com.br",
+    "monitorada": true
   },
   {
     "nome": "Pague Menos",
-    "dominio": "www.paguemenos.com.br"
+    "dominio": "www.paguemenos.com.br",
+    "monitorada": true
   },
   {
     "nome": "Amo Beleza",
-    "dominio": "www.amobeleza.com.br"
+    "dominio": "www.amobeleza.com.br",
+    "monitorada": true
   },
   {
     "nome": "Dailus",
-    "dominio": "www.dailus.com.br"
+    "dominio": "www.dailus.com.br",
+    "monitorada": true
   },
   {
     "nome": "Catharine Hill",
-    "dominio": "www.catharinehill.com.br"
+    "dominio": "www.catharinehill.com.br",
+    "monitorada": true
   },
   {
     "nome": "Lojas Americanas",
-    "dominio": "www.americanas.com.br"
+    "dominio": "www.americanas.com.br",
+    "monitorada": true
   },
   {
     "nome": "Sephora",
-    "dominio": "www.sephora.com.br"
+    "dominio": "www.sephora.com.br",
+    "monitorada": false
   },
   {
     "nome": "Beleza na Web",
-    "dominio": "www.belezanaweb.com.br"
+    "dominio": "www.belezanaweb.com.br",
+    "monitorada": true
   },
   {
     "nome": "MAC Cosmetics",
-    "dominio": "www.maccosmetics.com.br"
+    "dominio": "www.maccosmetics.com.br",
+    "monitorada": true
   },
   {
     "nome": "O Boticário",
-    "dominio": "www.boticario.com.br"
+    "dominio": "www.boticario.com.br",
+    "monitorada": false
   },
   {
     "nome": "Quem Disse, Berenice?",
-    "dominio": "www.quemdisseberenice.com.br"
+    "dominio": "www.quemdisseberenice.com.br",
+    "monitorada": false
   },
   {
     "nome": "Eudora",
-    "dominio": "www.eudora.com.br"
+    "dominio": "www.eudora.com.br",
+    "monitorada": false
   },
   {
     "nome": "Natura",
-    "dominio": "www.natura.com.br"
+    "dominio": "www.natura.com.br",
+    "monitorada": false
   },
   {
     "nome": "Vult",
-    "dominio": "www.vult.com.br"
+    "dominio": "www.vult.com.br",
+    "monitorada": false
   },
   {
     "nome": "Ruby Rose",
-    "dominio": "www.rubyrose.com.br"
+    "dominio": "www.rubyrose.com.br",
+    "monitorada": false
   },
   {
     "nome": "Lancôme",
-    "dominio": "www.lancome.com.br"
+    "dominio": "www.lancome.com.br",
+    "monitorada": false
   },
   {
     "nome": "Drogaria São Paulo",
-    "dominio": "www.drogariasaopaulo.com.br"
+    "dominio": "www.drogariasaopaulo.com.br",
+    "monitorada": false
   },
   {
     "nome": "Drogarias Pacheco",
-    "dominio": "www.drogariaspacheco.com.br"
+    "dominio": "www.drogariaspacheco.com.br",
+    "monitorada": false
   },
   {
     "nome": "Payot",
-    "dominio": "www.payot.com.br"
+    "dominio": "www.payot.com.br",
+    "monitorada": false
   },
   {
     "nome": "Tracta",
-    "dominio": "www.tracta.com.br"
+    "dominio": "www.tracta.com.br",
+    "monitorada": false
   },
   {
     "nome": "Max Love",
-    "dominio": "www.maxlove.com.br"
+    "dominio": "www.maxlove.com.br",
+    "monitorada": false
   },
   {
     "nome": "Boca Rosa Beauty",
-    "dominio": "www.bocarosabeauty.com.br"
+    "dominio": "www.bocarosabeauty.com.br",
+    "monitorada": false
   },
   {
     "nome": "Bruna Tavares",
-    "dominio": "www.brunatavares.com.br"
+    "dominio": "www.brunatavares.com.br",
+    "monitorada": false
   },
   {
     "nome": "Fran by Franciny Ehlke",
-    "dominio": "www.franbyfe.com.br"
+    "dominio": "www.franbyfe.com.br",
+    "monitorada": false
   },
   {
     "nome": "Melu",
-    "dominio": "www.melu.com.br"
+    "dominio": "www.melu.com.br",
+    "monitorada": false
   },
   {
     "nome": "Panvel",
-    "dominio": "www.panvel.com"
+    "dominio": "www.panvel.com",
+    "monitorada": false
   },
   {
     "nome": "Magalu",
-    "dominio": "www.magazineluiza.com.br"
+    "dominio": "www.magazineluiza.com.br",
+    "monitorada": true
   },
   {
     "nome": "Clinique",
-    "dominio": "www.clinique.com.br"
+    "dominio": "www.clinique.com.br",
+    "monitorada": false
   },
   {
     "nome": "Benefit",
-    "dominio": "www.benefitcosmetics.com.br"
+    "dominio": "www.benefitcosmetics.com.br",
+    "monitorada": false
   },
   {
     "nome": "Mercado Livre",
-    "dominio": "lista.mercadolivre.com.br"
+    "dominio": "lista.mercadolivre.com.br",
+    "monitorada": true
   },
   {
     "nome": "TikTok Shop",
-    "dominio": "shop.tiktok.com"
+    "dominio": "shop.tiktok.com",
+    "monitorada": true
   }
 ]

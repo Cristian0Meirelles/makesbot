@@ -274,6 +274,8 @@ class Motor:
         linhas = []
         if modo in ("rapido", "tudo"):
             for l in self.lojas:
+                if l["nome"] not in self._status_loja or l.get("tipo") == "mercadolivre":
+                    continue
                 linhas.append({"nome": l["nome"], "dominio": l.get("dominio"),
                                "tipo": self._tipo_detectado.get(l["nome"], l.get("tipo")),
                                "frequencia": "a cada 5 min", "ok": self._status_loja.get(l["nome"]),
@@ -283,7 +285,7 @@ class Motor:
             for loja in self._feed_cache:
                 linhas.append({"nome": loja, "dominio": DOMINIOS.get(loja), "tipo": "feed afiliado",
                                "frequencia": "a cada hora", "ok": True, "atualizado_em": self.agora.isoformat()})
-        if modo in ("tiktok", "tudo"):
+        if modo in ("tiktok", "tudo") and "TikTok Shop" in self._status_loja:
             linhas.append({"nome": "TikTok Shop", "dominio": "shop.tiktok.com", "tipo": "link",
                            "frequencia": "2x por dia", "ok": self._status_loja.get("TikTok Shop"),
                            "atualizado_em": self.agora.isoformat()})

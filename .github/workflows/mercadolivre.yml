@@ -1,0 +1,28 @@
+name: Catálogo Mercado Livre
+on:
+  push:
+    branches: [main]
+    paths: [bot/mercadolivre_catalogo.py, .github/workflows/mercadolivre.yml]
+  schedule:
+    - cron: "45 8 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: catalogo-mercado-livre
+  cancel-in-progress: false
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m bot.mercadolivre_catalogo
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

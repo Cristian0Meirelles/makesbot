@@ -267,16 +267,23 @@ function oficialDe(marca) {
 }
 const SELO_OFICIAL = '<span class="selo-oficial">✓ Site oficial</span>';
 let tomFiltro = "";
-const corFalsa = c => !c || /^(\d+([.,]\d+)?\s*(un|und|unid|unidade|unidades|ml|g|gr|kg|oz)?|unic[oa]|padr[aã]o|u|default|default title|sem cor)$/i.test(String(c).trim());
+const corFalsa = c => !c || /^(\d+([.,]\d+)?\s*(un|und|unid|unidade|unidades|ml|g|gr|kg|oz)|unic[oa]|padr[aã]o|u|default|default title|sem cor)$/i.test(String(c).trim());
 let paletasPromise;
+function carregarPaletas() {
+  paletasPromise ||= fetch("amostras-cor.json").then(r => {
+    if (!r.ok) throw new Error();
+    return r.json();
+  }).catch(() => { paletasPromise = null; return {}; });
+  return paletasPromise;
+}
+function amostraDoTom(tom, paleta) {
+  const hex = /^#[0-9a-f]{6}$/i.test(tom || "") ? tom.slice(1) : paleta?.tons?.[norm(tom)];
+  return /^[0-9a-f]{6}$/i.test(hex || "") ? `<span class="tom-amostra" style="background-color:#${hex}" aria-hidden="true"></span>` : "";
+}
 async function sugerirMesmaCor(area, ref, cat, cor) {
   if (!cor || !ref.grupo) return;
   try {
-    paletasPromise ||= fetch("amostras-cor.json").then(r => {
-      if (!r.ok) throw new Error();
-      return r.json();
-    }).catch(() => { paletasPromise = null; return {}; });
-    const paletas = await paletasPromise;
+    const paletas = await carregarPaletas();
     const codigo = (grupo, tom) => /^#[0-9a-f]{6}$/i.test(tom || "") ? tom.slice(1).toLowerCase() : paletas[grupo]?.tons?.[norm(tom)];
     const hex = codigo(ref.grupo, cor);
     if (!hex) return;
@@ -352,7 +359,9 @@ async function abrirComparacao(g, cat, corEscolhida) {
   const img = lista.find(r => r.imagem)?.imagem || cores.get(corAtual)?.img;
   const pendentes = ["Mercado Livre", "TikTok Shop"].filter(loja => !porLoja.has(loja));
   const nomeProduto = g.nome || ref.produto;
-  await carregarOficiais();
+  const [, paletas] = await Promise.all([carregarOficiais(), carregarPaletas()]);
+  const paleta = paletas[ref.grupo];
+  const rotuloTom = nome => [paleta?.numeros?.[norm(nome)], nome].filter(Boolean).map(esc).join(" · ");
   const oficial = oficialDe(ref.marca);
 
   const outras = new Map();
@@ -371,11 +380,11 @@ async function abrirComparacao(g, cat, corEscolhida) {
       <div>
         <div class="marca">${esc(ref.marca || "")} · ${esc(cat)}</div>
         <h2>${esc(nomeProduto)}</h2>
-        <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${esc(corNome)}</b> · ` : ""}${melhorLoja ? `<b>Melhor preço: ${brl(melhorLoja.preco)}</b> na ${esc(melhorLoja.loja)} · ` : ""}${disp.length ? `tem em ${disp.length} de ${lista.length} loja${lista.length > 1 ? "s" : ""}` : "esgotado nas ofertas verificadas"}</div>
+        <div class="resumo">${corNome && corNome !== "Única" ? `Cor <b style="color:var(--tinta)">${amostraDoTom(corNome, paleta)}${rotuloTom(corNome)}</b> · ` : ""}${melhorLoja ? `<b>Melhor preço: ${brl(melhorLoja.preco)}</b> na ${esc(melhorLoja.loja)} · ` : ""}${disp.length ? `tem em ${disp.length} de ${lista.length} loja${lista.length > 1 ? "s" : ""}` : "esgotado nas ofertas verificadas"}</div>
         ${cores.size > 1 ? `<div class="cores-titulo">Cores (${cores.size})</div>
           ${tons.length > 1 ? `<div class="tons-filtro">${["", ...tons].map(t => `<button class="chip${t === tomFiltro ? " on" : ""}" data-tom="${esc(t)}">${t ? "Pele " + esc(t).toLowerCase() : "Todos os tons"}</button>`).join("")}</div>` : ""}
           <div class="cores">${coresVisiveis.map(([k, c]) => `
-          <button class="cor${k === corAtual ? " on" : ""}" data-k="${esc(k)}"><span class="bol">${c.img ? `<img src="${esc(c.img)}" alt="" loading="lazy">` : `<span style="display:grid;place-items:center;width:100%;height:100%;font-size:10px;font-weight:700">${esc((c.nome || "?").slice(0, 2).toUpperCase())}</span>`}</span>${esc(c.nome)}${c.disp ? '<span class="d" title="tem em estoque"></span>' : ""}</button>`).join("")}</div>` : ""}
+          <button class="cor${k === corAtual ? " on" : ""}" aria-pressed="${k === corAtual}" data-k="${esc(k)}">${amostraDoTom(c.nome, paleta) || (c.img ? `<span class="bol"><img src="${esc(c.img)}" alt="" loading="lazy"></span>` : "")}${rotuloTom(c.nome)}${c.disp ? '<span class="d" title="tem em estoque"></span>' : ""}</button>`).join("")}</div>` : ""}
         <div class="lojas-lista">${lista.map(r => `
           <div class="linha-loja${r.disponivel ? " disp" : ""}">
             ${logoLoja(r.loja)}
@@ -733,7 +742,14 @@ function renderRadar() {
 }
 
 function renderLojas() {
-  $("#lojasGrade").innerHTML = LOJAS.map(l => `<div class="loja-chip">${logoLoja(l.nome)}<div><b>${esc(l.nome)}</b><span>${esc(l.frequencia || "Fonte cadastrada")}</span></div><span class="ok${l.ok === true ? " on" : ""}" title="${l.ok === false ? "com problema na última checagem" : l.ok === true ? "funcionando" : "aguardando confirmação"}"></span></div>`).join("");
+  $("#lojasGrade").innerHTML = LOJAS.map(l => {
+    const marketplace = ["Mercado Livre", "TikTok Shop"].includes(l.nome);
+    const monitorada = l.monitorada || l.ok === true || Boolean(l.frequencia);
+    const pendente = l.ok === false || (marketplace && l.ok !== true);
+    const estado = pendente ? "Aguardando confirmação" : monitorada ? "Monitoramento ativo" : "Consulta por link";
+    const detalhe = marketplace ? (l.nome === "TikTok Shop" ? "2x por dia" : "diária") : l.frequencia;
+    return `<div class="loja-chip">${logoLoja(l.nome)}<div><b>${esc(l.nome)}</b><span>${estado}${detalhe ? " · " + esc(detalhe) : ""}</span></div><span class="ok${pendente ? " pendente" : monitorada ? " on" : ""}" aria-hidden="true"></span></div>`;
+  }).join("");
 }
 
 /* ------------------------------------------------ formulário */

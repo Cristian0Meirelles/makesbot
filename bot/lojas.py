@@ -119,6 +119,12 @@ def ofertas_vtex(loja: str, dominio: str, produtos: list) -> list[Oferta]:
                 cor = cor[len(nome):].strip(" -–|")
             if normalizar(cor) == normalizar(nome) or normalizar(cor) in normalizar(nome):
                 cor = ""
+            for campo in item.get("variations") or []:
+                if normalizar(campo) in {"cor", "color", "tom", "tonalidade", "shade"}:
+                    valores = item.get(campo)
+                    if isinstance(valores, list) and len(valores) == 1 and valores[0]:
+                        cor = str(valores[0]).strip()
+                        break
             saida.append(Oferta(loja, titulo, url, disp, img, preco, extra={
                 "marca": p.get("brand"), "produto": nome,
                 "cor": cor or None,
@@ -158,8 +164,11 @@ def catalogo_shopify(loja: str, dominio: str, pagina: int) -> list[Oferta] | Non
         por_id = {i.get("id"): i.get("src") for i in imgs}
         link = f"https://{dominio}/products/{p.get('handle')}"
         variantes = p.get("variants") or []
+        opcao_cor = next((i for i, opt in enumerate(p.get("options") or [], 1)
+                          if normalizar(opt.get("name") if isinstance(opt, dict) else opt)
+                          in {"cor", "color", "colour", "shade", "tom", "tonalidade"}), None)
         for v in variantes:
-            cor = v.get("title")
+            cor = (v.get(f"option{opcao_cor}") if opcao_cor else None) or v.get("title")
             if not cor or cor.lower() in ("default title", "default"):
                 cor = None
             img = por_id.get(v.get("image_id")) or (v.get("featured_image") or {}).get("src") or img_padrao

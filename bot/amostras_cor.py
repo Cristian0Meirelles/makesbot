@@ -40,5 +40,8 @@ if __name__ == "__main__":
     with ThreadPoolExecutor(4) as pool:
         paletas = dict(zip(urls, pool.map(amostras_mac, urls)))
     indice = {grupo: {"fonte": url, "tons": paletas[url]} for grupo, url in produtos.items() if paletas[url]}
+    for grupo, dados in json.loads((DOCS.parent / "config/numeros_tons.json").read_text()).items():
+        if grupo in indice:
+            indice[grupo].update(dados)
     (DOCS / "amostras-cor.json").write_text(json.dumps(indice, ensure_ascii=False, sort_keys=True) + "\n")
     print(len(indice), "modelos com amostras")
