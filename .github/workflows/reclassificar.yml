@@ -1,0 +1,25 @@
+name: Revisar categorias do catálogo
+on:
+  push:
+    branches: [main]
+    paths: [bot/reclassificar.py, bot/catalogo.py, .github/workflows/reclassificar.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: revisar-categorias
+  cancel-in-progress: false
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python -m bot.reclassificar
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

@@ -22,6 +22,7 @@ log = logging.getLogger("catalogo")
 
 # termo de busca -> categoria
 TERMOS = {
+    "lip oil": "Óleo labial", "lip balm": "Balm labial", "lápis de olho": "Lápis de olhos",
     "blush": "Blush", "batom": "Batom", "gloss": "Gloss", "lip tint": "Lip tint", "lapis labial": "Lápis labial",
     "base": "Base", "corretivo": "Corretivo", "po facial": "Pó", "iluminador": "Iluminador",
     "bronzer": "Bronzer", "contorno": "Contorno", "paleta de sombras": "Sombra", "sombra": "Sombra",
@@ -62,8 +63,40 @@ NAO_MAQUIAGEM = ["perfume", "parfum", "eau de", "toilette", "colonia", "body spl
                  "estojo vazio", "mascara facial", "mascara de argila", "mascara capilar", "serum facial"]
 
 
+# Expressões de tipo usadas no título pelas lojas. "Hidratante" também descreve
+# o acabamento de maquiagem. Acessórios e produtos de cabelo continuam excluídos.
+TIPOS_NO_NOME = (
+    ("lapis de olhos", "Lápis de olhos"), ("lapis de olho", "Lápis de olhos"),
+    ("lapis para olhos", "Lápis de olhos"), ("eye pencil", "Lápis de olhos"),
+    ("lapis para labios", "Lápis labial"), ("lapis de labios", "Lápis labial"),
+    ("lip oil", "Óleo labial"), ("oleo labial", "Óleo labial"),
+    ("lip balm", "Balm labial"), ("balm labial", "Balm labial"), ("hidratante labial", "Balm labial"),
+    ("bb cream", "Base"), ("cc cream", "Base"), ("bruma fixadora", "Fixador"),
+)
+def categoria_recuperada(produto):
+    nome = " " + normalizar(produto) + " "
+    if any(x in nome for x in (" kit ", " combo ", " duo pack ", " capilar ", " cabelo ", " fios ",
+                                " hair ", " brush ", " para unhas ", " de unha ", " refil vazio ")):
+        return None
+    sem_adjetivo = nome.replace(" hidratante ", " ")
+    if any(" " + normalizar(x) in sem_adjetivo for x in NAO_MAQUIAGEM):
+        return None
+    for termo, categoria in TIPOS_NO_NOME:
+        if f" {termo} " in nome:
+            return categoria
+    if " hidratante " in nome:
+        for termo, categoria in (("batom", "Batom"), ("lipstick", "Batom"), ("base", "Base"),
+                                 ("primer", "Primer"), ("corretivo", "Corretivo"), ("gloss", "Gloss")):
+            if f" {termo} " in nome and " a base de " not in nome:
+                return categoria
+    return None
+
+
 def categoria_de(o: Oferta, termo_cat: str | None) -> str:
     nome = " " + normalizar(o.extra.get("produto") or o.titulo) + " "
+    recuperada = categoria_recuperada(nome)
+    if recuperada:
+        return recuperada
     tipo_nome = nome.replace(" batom hidratante ", " batom ")
     if any(" " + normalizar(x) in tipo_nome for x in NAO_MAQUIAGEM):
         return "Outro"
