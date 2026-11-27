@@ -448,3 +448,10 @@ def test_marketplace_associa_apenas_variante_identificada():
     anuncios = [dict(ref, produto=nome, grupo="separado", cor=None, busca=nome) for nome in nomes]
     associar_variantes(anuncios, [ref])
     assert [(r["grupo"], r["cor"]) for r in anuncios] == [(ref["grupo"], "Film Noir"), ("separado", None), ("separado", None)]
+
+
+def test_batom_hidratante_aparece_no_catalogo():
+    from bot.catalogo import categoria_de
+    from bot.util import Oferta
+    assert categoria_de(Oferta("Loja", "Batom Hidratante Lustreglass", "https://loja/p", False), None) == "Batom"
+    assert categoria_de(Oferta("Loja", "Hidratante corporal", "https://loja/p", False), None) == "Outro"

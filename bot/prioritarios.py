@@ -169,6 +169,9 @@ def atualizar():
             headers={"Prefer": "resolution=ignore-duplicates,return=minimal"})
     linhas = [linha_catalogo(o, o.extra.get("categoria", "Blush"), agora, "") for o in ofertas]
     db.salvar_catalogo(linhas)
+    # Corrige a classificação anterior sem alterar o horário da última leitura.
+    db._req("PATCH", "catalogo", params={"marca": "eq.MAC", "grupo": "eq.mac|batom hidratante lustreglass sheershine",
+            "categoria": "eq.Outro"}, json={"categoria": "Batom"})
     # Reclassifica também a última leitura quando a loja estiver fora do ar.
     for antigo in anteriores:
         if antigo["loja"] == "MAC Cosmetics" and antigo["cor"] == "Film Noir Buff":

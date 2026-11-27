@@ -64,7 +64,8 @@ NAO_MAQUIAGEM = ["perfume", "parfum", "eau de", "toilette", "colonia", "body spl
 
 def categoria_de(o: Oferta, termo_cat: str | None) -> str:
     nome = " " + normalizar(o.extra.get("produto") or o.titulo) + " "
-    if any(" " + normalizar(x) in nome for x in NAO_MAQUIAGEM):
+    tipo_nome = nome.replace(" batom hidratante ", " batom ")
+    if any(" " + normalizar(x) in tipo_nome for x in NAO_MAQUIAGEM):
         return "Outro"
     marca = normalizar(o.extra.get("marca"))
     if " skinfinish colourstruck " in nome and (marca in {"mac", "m a c", "mac cosmetics"} or " mac " in nome):
