@@ -701,6 +701,21 @@ $("#ativarWpp").onclick = e => {
 $("#whatsapp").oninput = e => { let d = e.target.value.replace(/\D/g, "").slice(0, 13); if (d.startsWith("55") && d.length > 11) d = d.slice(2);
   e.target.value = d.length > 6 ? `(${d.slice(0,2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}` : d.length > 2 ? `(${d.slice(0,2)}) ${d.slice(2)}` : d; };
 
+async function preencherWhatsAppDaConta() {
+  const token = sessionStorage.getItem("voltou.sessao");
+  if (!token || DEMO) return;
+  try {
+    const r = await fetch(C.supabaseUrl + "/auth/v1/user", {headers: {apikey: C.supabaseAnonKey, Authorization: "Bearer " + token}});
+    if (!r.ok) return;
+    const telefone = (await r.json()).user_metadata?.whatsapp;
+    if (/^\+55\d{10,11}$/.test(telefone) && !$("#whatsapp").value) {
+      $("#whatsapp").value = telefone.slice(3);
+      $("#whatsapp").dispatchEvent(new Event("input"));
+    }
+  } catch { /* O visitante também pode informar o número diretamente. */ }
+}
+preencherWhatsAppDaConta();
+
 let fotoBlob = null;
 async function comprimir(arquivo) {
   const bmp = await createImageBitmap(arquivo);
