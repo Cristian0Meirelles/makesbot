@@ -18,14 +18,40 @@ const MARCAS = ["MAC","Fenty Beauty","Rare Beauty","Charlotte Tilbury","NARS","D
 /* ------------------------------------------------ fotos (sempre reais; sem foto = aviso neutro) */
 const corDe = () => "";
 const semFoto = tam => `<div class="sem-foto" style="font-size:${tam < 60 ? 0 : 12}px"><svg width="${Math.max(18, tam / 4)}" height="${Math.max(18, tam / 4)}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="13" rx="3"/><circle cx="12" cy="12.5" r="3.2"/><path d="M8 6l1.5-2h5L16 6"/></svg>${tam >= 60 ? "<span>sem foto</span>" : ""}</div>`;
-const fotoOu = (img, _cat, _cor, tam = 120) => img
-  ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-foto-tam="${Number(tam)}">`
-  : semFoto(tam);
-
-document.addEventListener("error", event => {
+function fotosValidas(urls) {
+  return [...new Set(urls.filter(u => typeof u === "string" && /^https?:\/\//i.test(u)).map(u => u.replace(/^http:/i, "https:")))];
+}
+function fotoNoTamanho(url, tam) {
+  const foto = new URL(url);
+  if (foto.hostname === "sdcdn.io" && foto.searchParams.has("width")) {
+    const largura = tam >= 200 ? 900 : tam >= 100 ? 560 : 120;
+    foto.searchParams.set("width", largura);
+    foto.searchParams.set("height", largura);
+  }
+  return foto.href;
+}
+function fotoOu(img, _cat, _cor, tam = 120, alternativas = [], grupo = "") {
+  const fotos = fotosValidas([img, ...alternativas]).map(url => fotoNoTamanho(url, tam));
+  return fotos.length ? `<img src="${esc(fotos[0])}" alt="" loading="${tam >= 200 ? "eager" : "lazy"}" decoding="async" referrerpolicy="no-referrer" data-foto-tam="${tam}" data-alternativas="${esc(JSON.stringify(fotos.slice(1)))}" data-grupo="${esc(grupo)}" data-cor="${esc(_cor || "")}">` : semFoto(tam);
+}
+document.addEventListener("error", async event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement)) return;
-  if (img.hasAttribute("data-foto-tam")) img.outerHTML = semFoto(Number(img.dataset.fotoTam) || 120);
+  if (img.hasAttribute("data-foto-tam")) {
+    let alternativas = JSON.parse(img.dataset.alternativas || "[]");
+    if (!alternativas.length && img.dataset.grupo) {
+      const grupo = img.dataset.grupo;
+      delete img.dataset.grupo;
+      try {
+        const linhas = await linhasDoGrupo(grupo);
+        alternativas = fotosValidas(linhas.filter(r => !img.dataset.cor || norm(r.cor) === norm(img.dataset.cor)).map(r => r.imagem)).map(u => fotoNoTamanho(u, Number(img.dataset.fotoTam))).filter(u => u !== img.src);
+      } catch {}
+    }
+    if (alternativas.length) {
+      img.src = alternativas.shift();
+      img.dataset.alternativas = JSON.stringify(alternativas);
+    } else img.outerHTML = semFoto(Number(img.dataset.fotoTam) || 120);
+  }
   else if (img.hasAttribute("data-iniciais")) img.replaceWith(document.createTextNode(img.dataset.iniciais));
   else if (img.hasAttribute("data-remover")) img.remove();
 }, true);
@@ -214,7 +240,12 @@ const CAMPOS = "loja,marca,produto,cor,categoria,titulo,url,url_afiliado,imagem,
 
 async function linhasDoGrupo(grupo) {
   if (DEMO) { await carregarDemo(); return demoCatalogo().filter(r => r.grupo === grupo); }
-  return api(`catalogo?select=${CAMPOS}&grupo=eq.${encodeURIComponent(grupo)}&order=disponivel.desc,preco.asc.nullslast&limit=1500`);
+  const linhas = [];
+  for (;;) {
+    const lote = await api(`catalogo?select=${CAMPOS}&grupo=eq.${encodeURIComponent(grupo)}&order=id.asc&offset=${linhas.length}&limit=500`);
+    linhas.push(...lote);
+    if (lote.length < 500) return linhas;
+  }
 }
 
 let OFICIAIS = null;
@@ -239,7 +270,7 @@ let tomFiltro = "";
 const corFalsa = c => !c || /^(\d+([.,]\d+)?\s*(un|und|unid|unidade|unidades|ml|g|gr|kg|oz)?|unic[oa]|padr[aã]o|u|default|default title|sem cor)$/i.test(String(c).trim());
 async function abrirComparacao(g, cat, corEscolhida) {
   g.linhas.forEach(r => { if (corFalsa(r.cor)) r.cor = null; });
-  const base = g.linhas.filter(r => (r.categoria || "Outro") === cat);
+  const base = g.tipo === "produto" ? g.linhas : g.linhas.filter(r => (r.categoria || "Outro") === cat);
   const ref = base[0];
   // todas as cores do mesmo produto, em todas as lojas
   let todas = base;
@@ -279,15 +310,19 @@ async function abrirComparacao(g, cat, corEscolhida) {
   await carregarOficiais();
   const oficial = oficialDe(ref.marca);
 
-  const oficialDoProduto = oficial && !porLoja.has(oficial.loja)
-    && ((g.ofertasDoGrupo || base).find(r => r.loja === oficial.loja && linkProduto(r.url))?.url
-      || oficial.produtos?.[ref.grupo]);
+  const outras = new Map();
+  for (const r of todas) {
+    if (porLoja.has(r.loja)) continue;
+    const anterior = outras.get(r.loja);
+    if (!anterior || (r.disponivel && !anterior.disponivel)) outras.set(r.loja, r);
+  }
+  const oficialDoProduto = oficial && !porLoja.has(oficial.loja) && !outras.has(oficial.loja) && oficial.produtos?.[ref.grupo];
   const coresVisiveis = [...cores].filter(([k, c]) => !tomFiltro || c.tom === tomFiltro || k === corAtual);
 
   alvo().innerHTML = `<div class="painel">
     <div class="passos"><b>${esc(g.rotulo)}</b><span class="sep">›</span>${g.cats.size > 1 ? `<button id="voltarTipos">${esc(cat)}</button>` : `<span>${esc(cat)}</span>`}<span class="sep">›</span><span>Preços e estoque</span></div>
     <div class="comparar">
-      <div><div class="foto-grande">${fotoOu(img, cat, "", 220)}<span class="pill ${disp.length ? "on" : "off"}">${disp.length ? "Disponível agora" : "Esgotado"}</span></div></div>
+      <div><div class="foto-grande">${fotoOu(img, cat, "", 220, linhas.map(r => r.imagem))}<span class="pill ${disp.length ? "on" : "off"}">${disp.length ? "Disponível agora" : "Esgotado"}</span></div></div>
       <div>
         <div class="marca">${esc(ref.marca || "")} · ${esc(cat)}</div>
         <h2>${esc(nomeProduto)}</h2>
@@ -303,6 +338,11 @@ async function abrirComparacao(g, cat, corEscolhida) {
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.loja === oficial?.loja ? r.url : urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">${r.disponivel ? "Comprar" : "Ver produto"}</a>` : "<small>Link do item pendente</small>"}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
+          ${outras.size ? `<h3>Outras lojas deste produto</h3>${[...outras.values()].map(r => `<div class="linha-loja">
+            ${logoLoja(r.loja)}<div><div class="ln">${esc(r.loja)}${r.loja === oficial?.loja ? SELO_OFICIAL : ""}</div>
+            <div>${r.cor ? "Cor " + esc(r.cor) : "Cor não informada pela loja"}</div></div>
+            <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? "disponível" : "esgotado"}</small></div>
+            ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.url)}" target="_blank" rel="noopener">Ver produto</a>` : ""}</div>`).join("")}` : ""}
           ${linkProduto(oficialDoProduto) ? `<div class="linha-loja oficial">${logoLoja(oficial.loja)}
             <div><div class="ln">${esc(oficial.loja)} ${SELO_OFICIAL}</div><div class="lt">Escolha a cor na página do produto</div></div>
             <div></div><a class="btn btn-linha btn-sm" href="${esc(oficialDoProduto)}" target="_blank" rel="noopener">Ver produto</a></div>` : ""}
@@ -351,10 +391,9 @@ async function abrirProduto(v) {
   abrirJanela(); tomFiltro = "";
   try {
     const grupo = await linhasDoGrupo(v.grupo);
-    const cores = v.linhasBuscadas && new Set(v.linhasBuscadas.map(r => norm(r.cor)));
-    const linhas = cores ? grupo.filter(r => cores.has(norm(r.cor))) : grupo;
+    const linhas = grupo.filter(r => r.categoria && r.categoria !== "Outro");
     if (!linhas.length) throw new Error("sem dados");
-    const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, ofertasDoGrupo: grupo.filter(r => r.categoria === v.categoria), cats: new Set([v.categoria]), linhas: linhas.filter(r => r.categoria === v.categoria), tipo: "produto"};
+    const g = {rotulo: v.nome, nome: v.nome, marca: v.marca, cats: new Set([v.categoria]), linhas, tipo: "produto"};
     await abrirComparacao(g, v.categoria, v.corBuscada ? norm(v.corBuscada) : null);
   } catch (e) { ALVO.innerHTML = `<div class="painel"><div class="vazio">Não consegui abrir este produto agora.</div></div>`; }
 }
@@ -494,7 +533,20 @@ async function consultarVitrine() {
   const r = await fetch(`${C.supabaseUrl.replace(/\/$/, "")}/rest/v1/vitrine?${p}`, {headers: {apikey: C.supabaseAnonKey, Authorization: `Bearer ${C.supabaseAnonKey}`, Prefer: "count=exact"}});
   if (!r.ok) throw new Error(`Erro ${r.status}`);
   const total = +((r.headers.get("content-range") || "").split("/")[1] || 0);
-  return {itens: await r.json(), total};
+  const itens = await r.json();
+  if (!itens.length) return {itens, total};
+  // Reconstrói a página com as ofertas atuais, inclusive lojas esgotadas.
+  const grupos = itens.map(v => '"' + v.grupo.replace(/["\\]/g, c => "\\" + c) + '"').join(",");
+  const consulta = new URLSearchParams({select: CAMPOS, grupo: "in.(" + grupos + ")", categoria: "neq.Outro", order: "id.asc", limit: 500});
+  const ofertas = [];
+  for (;;) {
+    consulta.set("offset", ofertas.length);
+    const lote = await api("catalogo?" + consulta);
+    ofertas.push(...lote);
+    if (lote.length < 500) break;
+  }
+  const atuais = new Map(agregarDemo(ofertas).map(v => [v.grupo, v]));
+  return {itens: itens.filter(v => atuais.has(v.grupo)).map(v => ({...v, ...atuais.get(v.grupo), nome: v.nome, categoria: v.categoria})), total};
 }
 function ordenar(l) {
   const pr = v => v.preco_min ?? 1e9;
@@ -506,7 +558,7 @@ function agregarDemo(linhas) {
   for (const r of linhas) { if (!r.categoria || r.categoria === "Outro") continue; const g = m.get(r.grupo) || []; g.push(r); m.set(r.grupo, g); }
   return [...m.entries()].map(([grupo, ls]) => {
     const disp = ls.filter(r => r.disponivel), cp = (disp.length ? disp : ls).filter(r => r.preco).sort((a, b) => a.preco - b.preco), mel = cp[0] || ls[0];
-    return {grupo, marca: ls[0].marca, nome: ls[0].produto, categoria: ls[0].categoria, imagem: (disp.find(r => r.imagem) || ls.find(r => r.imagem) || {}).imagem,
+    return {grupo, fotos: fotosValidas(ls.map(r => r.imagem)), marca: ls[0].marca, nome: ls[0].produto, categoria: ls[0].categoria, imagem: (disp.find(r => r.imagem) || ls.find(r => r.imagem) || {}).imagem,
       preco_min: mel.preco, loja_min: mel.loja, url_min: mel.url_afiliado || mel.url, lojas: [...new Set(ls.map(r => r.loja))], lojas_disponiveis: [...new Set(disp.map(r => r.loja))],
       n_lojas: new Set(ls.map(r => r.loja)).size, n_cores: new Set(ls.map(r => norm(r.cor))).size, disponivel: !!disp.length, busca: ls.map(r => r.busca).join(" ")};
   });
@@ -515,7 +567,7 @@ function agregarDemo(linhas) {
 function cardVitrine(v, i) {
   const outras = v.n_lojas - 1, nd = v.lojas_disponiveis?.length || 0;
   return `<article class="card" data-i="${i}" tabindex="0" role="button" aria-label="Ver lojas e preços de ${esc(v.nome)}">
-    <div class="foto">${fotoOu(v.imagem, v.categoria, "", 120)}
+    <div class="foto">${fotoOu(v.imagem, v.categoria, v.corBuscada, 120, v.fotos || [], v.fotos ? "" : v.grupo)}
       <span class="pill ${v.disponivel ? "on" : "off"}">${v.disponivel ? "Disponível" : "Esgotado"}</span></div>
     <div class="corpo">
       <div class="m">${esc(v.marca || "")}</div><div class="n">${esc(v.nome)}${v.corBuscada ? " · " + esc(v.corBuscada) : ""}</div>
@@ -640,8 +692,7 @@ function renderLojas() {
 /* ------------------------------------------------ formulário */
 $("#cats").innerHTML = CATEGORIAS.map((c, i) => `<label><input type="radio" name="cat" value="${esc(c)}"${i === 0 ? " checked" : ""}><span>${esc(c)}</span></label>`).join("");
 $("#marcas").innerHTML = MARCAS.map(m => `<option value="${esc(m)}">`).join("");
-const numBot = (C.callmebotNumero || "+34 684 78 37 08").replace(/\D/g, "");
-$("#btnAtivarWpp").href = `https://wa.me/${numBot}?text=${encodeURIComponent("I allow callmebot to send me messages")}`;
+
 $("#querWpp").onchange = e => $("#wppBox").classList.toggle("on", e.target.checked);
 $("#whatsapp").oninput = e => { let d = e.target.value.replace(/\D/g, "").slice(0, 13); if (d.startsWith("55") && d.length > 11) d = d.slice(2);
   e.target.value = d.length > 6 ? `(${d.slice(0,2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}` : d.length > 2 ? `(${d.slice(0,2)}) ${d.slice(2)}` : d; };
@@ -699,7 +750,7 @@ $("#form").onsubmit = async e => {
   if (!v("email") && !(querWpp && wpp)) return mostrarErro("Coloque um e-mail ou um WhatsApp para receber o aviso.");
   if (v("email") && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v("email"))) return mostrarErro("Esse e-mail parece incompleto.");
   if (querWpp && wpp && wpp.length < 10) return mostrarErro("Coloque o WhatsApp com DDD.");
-  if (querWpp && wpp && !v("chave") && !v("email")) return mostrarErro("Ative o WhatsApp (botão verde) e cole o código recebido, ou coloque também um e-mail.");
+  if (querWpp && wpp && !v("chave") && !v("email")) return mostrarErro("Informe o código do CallMeBot para usar o WhatsApp, ou cadastre um e-mail.");
   if (v("link") && !/^https?:\/\//i.test(v("link"))) return mostrarErro("O link precisa começar com https://");
   if (!$("#aceite").checked) return mostrarErro("Marque a caixinha de aceite para continuarmos.");
 

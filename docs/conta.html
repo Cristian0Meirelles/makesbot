@@ -1,18 +1,25 @@
 <!doctype html>
-<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>Minha conta | Voltou!</title>
 <style>
 *{box-sizing:border-box}body{background:#fbf5f2;color:#2b1a1f;font:1rem/1.55 system-ui;margin:0}
-main{max-width:29rem;margin:8vh auto;padding:2rem;background:#fff;border-radius:1.5rem}
-h1{font:2.5rem Georgia;margin-bottom:.5rem}a{color:#963c58}label{display:block;margin-top:1rem}
-input,button{font:inherit;border:1px solid #cfbac0;border-radius:.7rem;padding:.7rem}input{width:100%}
-button{margin:.9rem .3rem 0 0;cursor:pointer;background:#fbf5f2}button.primary{background:#993d59;color:white}
-</style>
-<main><a href="./">← Voltar ao Voltou!</a><h1>Minha conta</h1>
-<form id="acesso"><label>E-mail<input id="email" type="email" required autocomplete="username"></label>
-<label>Senha<input id="senha" type="password" required autocomplete="current-password"></label>
-<button class="primary" value="entrar">Entrar</button><button value="cadastrar">Criar conta</button></form>
-<section id="perfil" hidden><p>Você entrou como <strong id="identidade"></strong>.</p><a href="./#catalogo">Ver catálogo</a>
-<button id="sair">Sair</button></section><p role="status" id="mensagem"></p></main>
-<script src="config.js" defer></script><script src="conta.js" defer></script></html>
+header,main{max-width:32rem;margin:auto}header{padding:1.3rem 1rem}header a{font:bold 2rem Georgia;text-decoration:none;color:#2b1a1f}header i{color:#b24867}
+main{padding:clamp(1.25rem,5vw,2.5rem);background:#fff;border:1px solid #ecd9d6;border-radius:1.5rem;margin:5vh auto}
+h1{font:2.4rem/1.12 Georgia;margin:.4rem 0 1rem}p{color:#654d54}a,.link{color:#893753}label{display:block;font-weight:600;margin-top:1rem}
+input,button{font:inherit;border-radius:.75rem;padding:.7rem .9rem}input{border:1px solid #c9b5bb;width:100%;margin-top:.25rem}button{cursor:pointer}button:disabled{opacity:.55}
+button.primary{width:100%;border:0;background:#913d59;color:white;font-weight:650;margin-top:1.3rem}.link{background:none;border:0;text-decoration:underline}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #b65074;outline-offset:2px}#codigo{letter-spacing:.18em}#mensagem:empty{display:none}
+@media(max-width:35rem){main{margin:1rem}}
+</style></head><body><header><a href="./" aria-label="Voltar à página inicial">Voltou<i>!</i></a></header>
+<main><h1 id="titulo">Entrar na minha conta</h1>
+<form id="acesso"><label for="email">E-mail</label><input id="email" type="email" required autocomplete="username">
+<label for="senha">Senha</label><input id="senha" type="password" required autocomplete="current-password">
+<div id="repetir" hidden><label for="confirmacao">Confirme sua senha</label><input id="confirmacao" type="password" autocomplete="new-password"><small>Use pelo menos oito caracteres.</small></div>
+<button class="primary" id="enviar">Entrar</button><button class="link" id="alternar" type="button">Criar conta</button></form>
+<form id="verificacao" hidden><p>Confira o e-mail enviado para <strong id="destino"></strong>. Digite o código abaixo ou use o link de confirmação, caso ele apareça na mensagem.</p>
+<label for="codigo">Código de verificação</label><input id="codigo" inputmode="numeric" pattern="[0-9]{6,10}" maxlength="10" autocomplete="one-time-code" required>
+<button class="primary">Confirmar e-mail</button><button class="link" id="reenviar" type="button">Reenviar e-mail</button><button class="link" type="button" id="voltar">Voltar para entrar</button></form>
+<section id="perfil" hidden><p>Você entrou como <strong id="identidade"></strong>.</p><a href="./#catalogo">Ver catálogo</a> <button class="link" id="sair">Sair</button></section>
+<p role="status" aria-live="polite" id="mensagem"></p></main>
+<script src="config.js" defer></script><script src="conta.js" defer></script></body></html>

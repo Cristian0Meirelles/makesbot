@@ -484,7 +484,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
   .modal.grande .fechar{position:sticky;top:10px;float:right;margin:10px 10px -50px 0;z-index:5;width:38px;height:38px}
   .modal.grande .caixa::before{content:"";display:block;width:42px;height:5px;border-radius:9px;background:#dccbc7;margin:8px auto 0}
   .comparar{gap:16px}
-  .comparar .foto-grande{max-width:230px;margin:0 auto}
+  .comparar .foto-grande{width:100%;max-width:230px;margin:0 auto}
   .comparar h2{font-size:25px}
   .cores{flex-wrap:nowrap;overflow-x:auto;max-height:none;padding-bottom:4px}
   .cor{flex:none}
@@ -659,16 +659,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
               <div class="campo"><label for="pessoa">Seu nome</label><input id="pessoa" maxlength="60" placeholder="Como te chamamos?"></div>
               <div class="campo"><label for="email">E-mail</label><input id="email" type="email" maxlength="120" placeholder="voce@email.com"></div>
             </div>
-            <label class="toggle"><input type="checkbox" id="querWpp" checked> Quero receber também no WhatsApp</label>
-            <div class="wpp-box on" id="wppBox">
+            <label class="toggle"><input type="checkbox" id="querWpp"> Quero receber também no WhatsApp</label>
+            <div class="wpp-box" id="wppBox">
               <div class="campo" style="margin-bottom:8px"><label for="whatsapp">Seu WhatsApp (com DDD)</label><input id="whatsapp" inputmode="tel" maxlength="20" placeholder="(11) 99999-9999"></div>
-              <b style="font-size:14px">Ative o WhatsApp em 30 segundos (grátis):</b>
-              <ol>
-                <li>Toque no botão verde. Vai abrir uma conversa com o nosso robô de avisos.</li>
-                <li>Envie a mensagem que já vem escrita.</li>
-                <li>Você recebe um código (APIKEY). Cole ele aqui embaixo.</li>
-              </ol>
-              <a class="btn btn-wpp btn-sm" id="btnAtivarWpp" target="_blank" rel="noopener">Ativar no WhatsApp</a>
+              <p>Para receber alertas, informe o código que o CallMeBot enviou ao seu número. Novas ativações dependem de vagas no provedor.</p>
+              <a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank" rel="noopener">Consultar ativação no CallMeBot</a>
               <div class="campo" style="margin:12px 0 0"><label for="chave">Código recebido (APIKEY)</label><input id="chave" inputmode="numeric" maxlength="20" placeholder="Ex.: 1234567"></div>
             </div>
           </fieldset>
@@ -705,7 +700,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;
     <div class="faq">
       <details><summary>É grátis?</summary><p>Sim. Você não paga nada para criar alertas.</p></details>
       <details><summary>Vou receber mensagem toda hora?</summary><p>Não. Você só recebe quando o produto volta ao estoque em alguma loja. Se ele esgotar e voltar de novo, avisamos outra vez, mas nunca mais de uma vez a cada 12 horas pela mesma loja.</p></details>
-      <details><summary>Por que preciso ativar o WhatsApp?</summary><p>Usamos um robô gratuito de avisos. Por segurança, o WhatsApp só permite que ele te mande mensagem depois que você envia a primeira. Leva 30 segundos e só precisa fazer uma vez.</p></details>
+      <details><summary>Por que preciso ativar o WhatsApp?</summary><p>Usamos um robô gratuito de avisos. Por segurança, o WhatsApp só permite que ele te mande mensagem depois que você envia a primeira. O provedor libera novas ativações conforme a disponibilidade.</p></details>
       <details><summary>E o TikTok Shop?</summary><p>O TikTok Shop bloqueia robôs com frequência, então conferimos os links do TikTok 2 vezes por dia. Para ele, cole o link do produto no alerta.</p></details>
       <details><summary>Vocês compram por mim?</summary><p>Não. A gente te manda o link direto do produto. A compra é feita por você, na loja, com segurança.</p></details>
       <details><summary>Como cancelo um alerta?</summary><p>Toda mensagem tem um link "Parar este alerta". Um toque e pronto.</p></details>

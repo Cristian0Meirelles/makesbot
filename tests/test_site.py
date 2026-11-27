@@ -17,6 +17,8 @@ def test_busca_paginada_e_detalhe(largura):
         amostra.append(dict(amostra[0], grupo="batom", produto="MACximal", categoria="Batom",
                             titulo="MACximal " + cor, cor=cor, preco=preco, disponivel=disponivel,
                             busca="mac batom macximal " + cor.lower()))
+    amostra.append(dict(amostra[-2], loja="Loja com outra cor", disponivel=False))
+    amostra.append(dict(amostra[-1], loja="Loja sem cor", cor=None, busca="mac batom macximal"))
     with pw.sync_playwright() as driver:
         browser = driver.chromium.launch()
         pagina = browser.new_page(viewport={"width": largura, "height": 800})
@@ -69,6 +71,9 @@ def test_busca_paginada_e_detalhe(largura):
         pw.expect(batom).to_contain_text("150,00")
         batom.click()
         pw.expect(pagina.locator("#produtoCorpo .resumo")).to_contain_text("Film Noir")
+        pw.expect(pagina.locator("#produtoCorpo .linha-loja")).to_have_count(3)
+        pw.expect(pagina.locator("#produtoCorpo .linha-loja").filter(has_text="Loja com outra cor")).to_contain_text("Cor Myth")
+        pw.expect(pagina.locator("#produtoCorpo .linha-loja").filter(has_text="Loja sem cor")).to_contain_text("Cor não informada")
         pw.expect(pagina.locator("#produtoCorpo .linha-loja").first).to_contain_text("esgotado")
         pagina.locator("#fecharProduto").click()
         pagina.locator("#q").fill("myth noir")
@@ -79,4 +84,43 @@ def test_busca_paginada_e_detalhe(largura):
         pagina.locator("#pedirBuscaAtual").click()
         assert pagina.locator("#nome").input_value().lower() == "inexistente"
         assert not erros
+        browser.close()
+
+
+def test_cadastro_exige_codigo_confirmado():
+    with pw.sync_playwright() as driver:
+        browser = driver.chromium.launch()
+        page = browser.new_page()
+        def recurso(route):
+            url = route.request.url
+            if url.startswith("https://voltou.test/"):
+                nome = url.split("/")[-1]
+                if nome == "config.js":
+                    return route.fulfill(content_type="application/javascript", body="window.VOLTOU_CONFIG={supabaseUrl:'https://auth.supabase.co',supabaseAnonKey:'public'}")
+                return route.fulfill(path=DOCS / nome)
+            if "/auth/v1/signup" in url:
+                return route.fulfill(json={"id": "pending"})
+            if "/auth/v1/verify" in url:
+                if route.request.post_data_json["token"] != "123456":
+                    return route.fulfill(status=403, json={"error_code": "otp_expired"})
+                return route.fulfill(json={"access_token": "verified"})
+            if "/auth/v1/user" in url:
+                return route.fulfill(json={"email": "cliente@example.org", "email_confirmed_at": "2026-11-26"})
+            route.abort()
+        page.route("**/*", recurso)
+        page.goto("https://voltou.test/conta.html")
+        page.locator("#alternar").click()
+        page.locator("#email").fill("cliente@example.org")
+        for campo in ["senha", "confirmacao"]:
+            page.locator("#" + campo).fill("segredo-exemplo")
+        page.locator("#enviar").click()
+        pw.expect(page.locator("#destino")).to_have_text("cliente@example.org")
+        page.reload()
+        page.locator("#codigo").fill("000000")
+        page.locator("#verificacao button.primary").click()
+        pw.expect(page.locator("#mensagem")).to_contain_text("Confira os dígitos")
+        pw.expect(page.locator("#perfil")).to_be_hidden()
+        page.locator("#codigo").fill("123456")
+        page.locator("#verificacao button.primary").click()
+        pw.expect(page.locator("#perfil")).to_be_visible()
         browser.close()
