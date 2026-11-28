@@ -266,6 +266,8 @@ hosts_links:
   - amazon.com.br
 
 tiktok_catalogo:
+  produtos_prioritarios:
+    https://shop.tiktok.com/br/pdp/batom-mac-hidratante/1736022415213954921: Batom
   max_cliques_ver_mais: 15
   espera_entre_cliques_seg: 2.0
   detalhar_max: 40          # produtos sem marca reconhecida que ele abre pra ler a marca

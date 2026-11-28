@@ -332,7 +332,7 @@ def test_tiktok_card_e_marca():
             "imagem": "https://img/x.webp"}
     o = T.card_para_oferta(card, marcas)
     assert o.extra["marca"] == "MAC" and o.preco == 88.8 and o.extra["preco_de"] == 139.0
-    assert o.url.endswith("/1736022415213954921") and o.disponivel
+    assert o.url.endswith("/1736022415213954921") and not o.extra["estoque_confirmado"]
     assert T.marca_do_titulo("Kit Gloss Labial Sarah’s Beauty – Brilho", marcas) in ("Sarah's Beauty", "Sarahs Beauty")
     assert T.marca_do_titulo("Gel Para Sobrancelhas Ruby Rose Brow", marcas) == "Ruby Rose"
     assert T.marca_do_titulo("M·A·C Ruby Woo", marcas) == "MAC"
@@ -352,7 +352,7 @@ def test_tiktok_pagina_produto_e_linhas():
     assert T.ler_pagina_produto("Vendido por X\nEsgotado\nSobre este produto")["disponivel"] is False
     marcas = T._lista_marcas()
     cards = [
-        {"link": "https://shop.tiktok.com/br/pdp/a/1", "titulo": "Blush Compacto Ruby Rose", "texto": "R$19,90"},
+        {"link": "https://shop.tiktok.com/br/pdp/a/1", "titulo": "Blush Compacto Ruby Rose", "texto": "R$19,90 Comprar agora"},
         {"link": "https://shop.tiktok.com/br/pdp/b/2", "titulo": "Kit Pincel de Maquiagem 12 peças", "texto": "R$29,90"},
     ]
     ofs = [(T.card_para_oferta(c, marcas), None) for c in cards]
@@ -474,3 +474,18 @@ def test_numero_de_cor_nao_e_tamanho():
     for cor in ("001", "2.5", "NC42"):
         o = Oferta("Loja", "Base", "https://loja/p", True, extra={"cor": cor})
         assert linha_catalogo(o, "Base", agora, "")["cor"] == cor
+
+
+def test_tiktok_variante_brasileira_exige_estoque_explicito():
+    import json
+    from bot.tiktok_catalogo import ofertas_do_produto
+    url = "https://shop.tiktok.com/br/pdp/batom/123"
+    produto = {"@type": "Product", "name": "Lustreglass", "color": "Alone Time", "sku": "001",
+               "offers": {"priceCurrency": "BRL", "price": "109.00", "availability": "https://schema.org/OutOfStock"}}
+    def pagina():
+        return '<script type="application/ld+json">' + json.dumps(produto) + '</script>'
+    oferta, = ofertas_do_produto(url, pagina())
+    assert oferta.extra["cor"] == "Alone Time" and oferta.preco == 109 and not oferta.disponivel
+    assert ofertas_do_produto(url.replace("/br/", "/us/"), pagina()) == []
+    del produto["offers"]["availability"]
+    assert ofertas_do_produto(url, pagina()) == []

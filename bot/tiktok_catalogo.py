@@ -13,12 +13,14 @@ Configuração em config/lojas.yaml -> tiktok_catalogo.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import logging
 import re
 import time
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from .catalogo import MARCAS, categoria_de, linha_catalogo
+from .lojas import _LDJSON, _nos, _tipo, _imagem
 from .util import Oferta, normalizar, preco_float
 
 log = logging.getLogger("tiktok")
@@ -102,12 +104,14 @@ def card_para_oferta(card: dict, marcas: list[tuple[str, str]]) -> Oferta | None
     texto = card.get("texto") or ""
     precos = PRECO_RE.findall(texto)
     baixo = texto.lower()
-    disponivel = not any(p in baixo for p in PALAVRAS_ESGOTADO)
+    esgotado = any(p in baixo for p in PALAVRAS_ESGOTADO)
+    comprar = any(p in baixo for p in PALAVRAS_COMPRA)
+    disponivel = comprar and not esgotado
     marca = marca_do_titulo(titulo, marcas)
     return Oferta(LOJA, titulo, link, disponivel, card.get("imagem") or None,
                   preco_float(precos[0]) if precos else None,
                   extra={"marca": marca or "", "produto": titulo, "cor": None, "categorias": "",
-                         "tiktok_id": m.group(1),
+                         "tiktok_id": m.group(1), "estoque_confirmado": esgotado or comprar,
                          "preco_de": preco_float(precos[1]) if len(precos) > 1 else None})
 
 
@@ -137,6 +141,8 @@ def montar_linhas(ofertas: list[tuple[Oferta, str | None]], agora: dt.datetime) 
     """Oferta + categoria do TikTok -> linhas da tabela catalogo (só maquiagem)."""
     linhas: dict[str, dict] = {}
     for o, cat_tiktok in ofertas:
+        if o.extra.get("estoque_confirmado") is False:
+            continue
         cat = categoria_de(o, cat_tiktok)
         if cat == "Outro":
             continue
@@ -209,6 +215,47 @@ def _abrir(page, url):
         raise Bloqueado("TikTok redirecionou a coleta BR para " + destino.path.split("/")[1])
 
 
+def ofertas_do_produto(url, html):
+    """Extrai variantes identificadas de uma página brasileira de produto."""
+    destino = urlsplit(url)
+    produto = ID_RE.fullmatch(destino.path.removeprefix("/br"))
+    if destino.hostname != "shop.tiktok.com" or not destino.path.startswith("/br/") or not produto:
+        return []
+    ofertas = {}
+    for bruto in _LDJSON.findall(html):
+        try:
+            dados = json.loads(bruto)
+        except ValueError:
+            continue
+        # Considera apenas o produto principal e suas próprias variantes.
+        principais = dados if isinstance(dados, list) else [dados]
+        for principal in principais:
+            if not isinstance(principal, dict) or not (_tipo(principal) & {"product", "productgroup"}):
+                continue
+            for no in _nos(principal.get("hasVariant") or principal):
+                if "product" not in _tipo(no):
+                    continue
+                titulo, cor, sku = no.get("name"), no.get("color"), no.get("sku")
+                if not all(isinstance(x, str) and x.strip() for x in (titulo, cor)) or not sku:
+                    continue
+                oferta = no.get("offers")
+                if isinstance(oferta, list) and len(oferta) == 1:
+                    oferta = oferta[0]
+                if not isinstance(oferta, dict) or oferta.get("priceCurrency") != "BRL":
+                    continue
+                estado = str(oferta.get("availability")).rsplit("/", 1)[-1]
+                preco = preco_float(oferta.get("price"))
+                if estado not in {"InStock", "OutOfStock", "SoldOut"} or not preco:
+                    continue
+                marca = no.get("brand")
+                # Fragmento identifica a variante no catálogo; a compra abre a página do item.
+                link = url.split("?")[0].split("#")[0] + "#sku=" + quote(str(sku), safe="")
+                ofertas[link] = Oferta(LOJA, titulo, link, estado == "InStock", _imagem(no), preco,
+                                        extra={"produto": titulo, "cor": cor, "marca": marca.get("name")
+                                               if isinstance(marca, dict) else marca})
+    return list(ofertas.values())
+
+
 def _cards_da_categoria(page, url, cliques: int, espera: float) -> list[dict]:
     _abrir(page, url)
     ultimo = 0
@@ -276,6 +323,16 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
         browser, ctx = _abrir_navegador(pw, chrome)
         page = ctx.pages[0] if chrome and ctx.pages else ctx.new_page()
         try:
+            for url, cat in (conf.get("produtos_prioritarios") or {}).items():
+                try:
+                    _abrir(page, url)
+                    variantes = ofertas_do_produto(page.url, page.content())
+                    for variante in variantes:
+                        ofertas[variante.url] = (variante, cat)
+                    log.info("TikTok produto prioritário: %d variantes confirmadas", len(variantes))
+                except Exception as exc:
+                    log.warning("Falha ao consultar produto prioritário: %s", exc)
+                    completo = False
             for slug, cat in categorias.items():
                 try:
                     cards = _cards_da_categoria(page, BASE + slug, cliques, espera)
@@ -296,7 +353,7 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
                 log.info("TikTok %s: %d cards, %d novos", slug, len(cards), novos)
 
             # abre alguns produtos sem marca reconhecida pra descobrir a marca (e conferir estoque)
-            sem_marca = [o for o, _ in ofertas.values() if not o.extra.get("marca")][:detalhar]
+            sem_marca = [o for o, _ in ofertas.values() if o.extra.get("tiktok_id") and (not o.extra.get("marca") or not o.extra.get("estoque_confirmado"))][:detalhar]
             for o in sem_marca:
                 try:
                     _abrir(page, o.url)
@@ -310,6 +367,7 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
                     o.extra["marca"] = info["marca"]
                 if info["disponivel"] is not None:
                     o.disponivel = info["disponivel"]
+                    o.extra["estoque_confirmado"] = True
                 time.sleep(1)
         except Bloqueado as b:
             completo = False
