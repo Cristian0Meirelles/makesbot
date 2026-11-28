@@ -228,6 +228,12 @@ def _cards_da_categoria(page, url, cliques: int, espera: float) -> list[dict]:
             break
         ultimo = n
     cards = page.evaluate(_JS_CARDS)
+    if not cards and url.endswith("/601534"):
+        # A categoria pública de batons serve de amostra quando o catálogo desaparece.
+        caminhos = page.locator("a[href]").evaluate_all(
+            "(links) => [...new Set(links.map(a => new URL(a.href, location.href).pathname))].slice(0, 25)")
+        log.info("Categoria de batons sem produtos: texto %r, caminhos %s",
+                 page.locator("body").inner_text()[:650], caminhos)
     if not cards:
         log.warning("Categoria sem cards: %d links na página, %d apontam para /pdp/",
                     page.locator("a[href]").count(), page.locator('a[href*="/pdp/"]').count())
