@@ -159,3 +159,20 @@ def test_alternativa_so_com_mesma_amostra_em_estoque():
         pw.expect(p.locator(".alternativas")).to_contain_text("Outra marca")
         pw.expect(p.locator(".alternativas a")).to_have_attribute("href", "https://loja.test/malva")
         browser.close()
+
+
+def test_tiktok_painel_precos_por_cor():
+    from bot.tiktok_catalogo import ofertas_do_painel, _lista_marcas
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        pagina = browser.new_page()
+        pagina.set_content("""
+        <section><strong id="preco">R$153,00</strong><p id="cor">Cor: Velvet Teddy</p>
+        <button disabled><img alt="">Film Noir Buff</button>
+        <button onclick="cor.textContent='Cor: Pony';preco.textContent='R$139,50'"><img alt="">Pony</button>
+        <div>Quantidade:</div></section>""")
+        itens = ofertas_do_painel(pagina, "Blush MAC Skinfinish", "https://www.tiktok.com/view/product/123", _lista_marcas())
+        assert [(v.extra["cor"], v.disponivel, v.preco) for v in itens] == [
+            ("Film Noir Buff", False, None), ("Pony", True, 139.5)]
+        browser.close()

@@ -257,6 +257,61 @@ def ofertas_do_produto(url, html):
     return list(ofertas.values())
 
 
+def ofertas_do_painel(page, titulo, url, marcas):
+    """Lê somente opções de cor, sem acionar botões de compra."""
+    from playwright.sync_api import TimeoutError as TempoEsgotado
+
+    cor_label = page.get_by_text(re.compile(r"^Cor\s*:", re.I)).last
+    try:
+        cor_label.wait_for(state="visible", timeout=4000)
+    except TempoEsgotado:
+        return []
+    # O painel móvel pode não ter role=dialog. Quantidade identifica seu rodapé.
+    painel = cor_label.locator("xpath=ancestor::*[.//*[starts-with(normalize-space(text()), 'Quantidade')]][1]")
+    if not painel.count() or painel.evaluate("e => ['BODY','HTML'].includes(e.tagName)"):
+        return []
+    opcoes = painel.locator('button:has(img), [role="option"], [role="radio"], [data-sku-id], div:has(> img)')
+    preco_re = re.compile(r"R\$\s*([0-9.]+(?:,[0-9]{2})?)")
+    if not titulo or not preco_re.search(painel.inner_text()):
+        return []
+    saida = {}
+    limites = [cor_label.element_handle(), painel.get_by_text(re.compile(r"^Quantidade", re.I)).first.element_handle()]
+    for opcao in opcoes.all():
+        entre_limites = opcao.evaluate("""(el, [cor, quantidade]) =>
+            !!(cor.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+            !!(el.compareDocumentPosition(quantidade) & Node.DOCUMENT_POSITION_FOLLOWING)""", limites)
+        if not entre_limites or not opcao.is_visible():
+            continue
+        info = opcao.evaluate("""el => {
+            const img = el.querySelector('img');
+            const nome = (el.getAttribute('aria-label') || el.getAttribute('title') ||
+                          el.innerText.trim() || img?.alt || '').trim();
+            const riscado = [el, ...el.querySelectorAll('*')].some(
+                n => getComputedStyle(n).textDecorationLine.includes('line-through'));
+            return {nome, imagem: img?.currentSrc, desabilitada: riscado ||
+                !!el.closest(':disabled, [aria-disabled="true"]')};
+        }""")
+        cor = info["nome"]
+        if not cor or len(cor) > 100 or "\n" in cor or cor.endswith(("…", "...")):
+            continue
+        preco = None
+        if not info["desabilitada"]:
+            try:
+                opcao.click(timeout=1500)
+                selecionada = re.compile(r"^Cor\s*:\s*" + re.escape(cor) + r"$", re.I)
+                painel.get_by_text(selecionada).first.wait_for(timeout=1500)
+            except TempoEsgotado:
+                continue
+            valor = preco_re.search(painel.inner_text())
+            preco = preco_float(valor[1]) if valor else None
+            if not preco:
+                continue
+        link = url.split("?")[0].split("#")[0] + "#cor=" + quote(cor, safe="")
+        saida[link] = Oferta(LOJA, titulo, link, not info["desabilitada"], info["imagem"], preco,
+                             extra={"produto": titulo, "cor": cor, "marca": marca_do_titulo(titulo, marcas)})
+    return list(saida.values())
+
+
 def _cards_da_categoria(page, url, cliques: int, espera: float) -> list[dict]:
     _abrir(page, url)
     ultimo = 0
@@ -326,20 +381,32 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
         try:
             for url, cat in (conf.get("produtos_prioritarios") or {}).items():
                 try:
+                    if not chrome:
+                        page.set_viewport_size({"width": 390, "height": 844})
                     _abrir(page, url)
                     seletor = page.get_by_text(re.compile(r"^Selecionar opções$", re.I))
+                    variantes = ofertas_do_produto(page.url, page.content())
                     if seletor.count() and seletor.first.is_visible():
+                        cabecalho = page.locator("h1").first
+                        titulo = cabecalho.inner_text().strip() if cabecalho.count() else ""
+                        if not titulo:
+                            meta = page.locator('meta[property="og:title"]').first
+                            titulo = meta.get_attribute("content") if meta.count() else ""
                         seletor.first.click(timeout=5000)
-                        log.info("TikTok: abriu o seletor de opções")
+                        painel = ofertas_do_painel(page, titulo, page.url, marcas)
+                        cores = {normalizar(v.extra["cor"]) for v in variantes}
+                        variantes.extend(v for v in painel if normalizar(v.extra["cor"]) not in cores)
+                        log.info("TikTok: abriu o seletor, %d cores lidas no painel", len(painel))
                     else:
                         log.info("TikTok: seletor ausente; início da página: %s", page.locator("body").inner_text()[:200])
-                    variantes = ofertas_do_produto(page.url, page.content())
                     for variante in variantes:
                         ofertas[variante.url] = (variante, cat)
                     log.info("TikTok produto prioritário: %d variantes confirmadas", len(variantes))
                 except Exception as exc:
                     log.warning("Falha ao consultar produto prioritário: %s", exc)
                     completo = False
+            if not chrome:
+                page.set_viewport_size({"width": 1440, "height": 900})
             for slug, cat in categorias.items():
                 try:
                     cards = _cards_da_categoria(page, BASE + slug, cliques, espera)
