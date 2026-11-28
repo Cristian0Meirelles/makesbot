@@ -163,7 +163,7 @@ def varrer_loja(loja: dict, agora: dt.datetime) -> list[dict]:
             try:
                 guardar(L.buscar_mercadolivre(nome, termo, loja.get("somente_oficial", True)), cat)
             except (L.LojaBloqueada, requests.RequestException) as erro:
-                log.warning("%s: coleta interrompida em %s (%s)", nome, termo, type(erro).__name__)
+                log.warning("%s: coleta interrompida em %s (%s)", nome, termo, str(erro) if isinstance(erro, L.LojaBloqueada) else type(erro).__name__)
                 break
         return list(linhas.values())
 

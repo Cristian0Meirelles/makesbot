@@ -1,6 +1,7 @@
 """Coleta diária independente das lojas oficiais do Mercado Livre."""
 import datetime as dt
 import os
+import logging
 from .catalogo import montar_vitrine, varrer_loja
 from .db import SupabaseDB
 from .main import carregar_config
@@ -25,4 +26,5 @@ def atualizar():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     atualizar()

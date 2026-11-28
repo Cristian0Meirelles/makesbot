@@ -257,15 +257,24 @@ _ML_CENTS = re.compile(r'andes-money-amount__cents[^>]*>(\d+)<', re.I)
 
 def buscar_mercadolivre(loja: str, termo: str, somente_oficial: bool = False) -> list[Oferta]:
     slug = normalizar(termo).replace(" ", "-")
-    html = _get(f"https://lista.mercadolivre.com.br/{slug}_NoIndex_True")
-    if html is None:
+    resposta = sessao().get(f"https://lista.mercadolivre.com.br/{slug}_NoIndex_True", timeout=15)
+    destino = urlparse(resposta.url)
+    log.info("Mercado Livre: HTTP %s, destino %s%s", resposta.status_code, destino.hostname, destino.path[:180])
+    if resposta.status_code in (401, 403, 429) or destino.path.startswith(("/gz/account-verification", "/jms/", "/login")):
+        raise LojaBloqueada(f"Mercado Livre: HTTP {resposta.status_code} em {destino.path[:180]}")
+    if resposta.status_code == 404:
         return []
+    resposta.raise_for_status()
+    html = resposta.text
     if "captcha" in html.lower() and "ui-search" not in html:
         raise LojaBloqueada("Mercado Livre pediu captcha")
     achados = []
     from .tiktok_catalogo import _lista_marcas, marca_do_titulo
     marcas = _lista_marcas()
-    for card in ofertas_mercadolivre_html(loja, html, somente_oficial):
+    cards = ofertas_mercadolivre_html(loja, html, somente_oficial)
+    log.info("Busca %s: %d anúncios identificados, %d elegíveis", termo,
+             len(ofertas_mercadolivre_html(loja, html)) if somente_oficial else len(cards), len(cards))
+    for card in cards:
         host = urlparse(card.url).hostname
         if host not in {"produto.mercadolivre.com.br", "www.mercadolivre.com.br", "mercadolivre.com.br"}:
             continue

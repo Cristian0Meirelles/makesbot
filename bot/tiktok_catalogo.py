@@ -16,6 +16,7 @@ import datetime as dt
 import logging
 import re
 import time
+from urllib.parse import urlsplit
 
 from .catalogo import MARCAS, categoria_de, linha_catalogo
 from .util import Oferta, normalizar, preco_float
@@ -200,7 +201,12 @@ def _abrir(page, url):
     except Exception:  # noqa: BLE001
         pass
     time.sleep(1.5)
+    destino = urlsplit(page.url)
+    log.info("TikTok: HTTP %s, destino %s%s, título %r", resposta.status if resposta else "?",
+             destino.hostname, destino.path[:180], page.title()[:120])
     _checar_bloqueio(page)
+    if destino.path.startswith(("/us/", "/gb/", "/uk/")):
+        raise Bloqueado("TikTok redirecionou a coleta BR para " + destino.path.split("/")[1])
 
 
 def _cards_da_categoria(page, url, cliques: int, espera: float) -> list[dict]:
@@ -221,7 +227,11 @@ def _cards_da_categoria(page, url, cliques: int, espera: float) -> list[dict]:
         if n == ultimo:
             break
         ultimo = n
-    return page.evaluate(_JS_CARDS)
+    cards = page.evaluate(_JS_CARDS)
+    if not cards:
+        log.warning("Categoria sem cards: %d links na página, %d apontam para /pdp/",
+                    page.locator("a[href]").count(), page.locator('a[href*="/pdp/"]').count())
+    return cards
 
 
 def _abrir_navegador(pw, chrome: bool):
