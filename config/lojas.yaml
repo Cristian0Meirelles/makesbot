@@ -267,6 +267,7 @@ hosts_links:
 
 tiktok_catalogo:
   produtos_prioritarios:
+    https://www.tiktok.com/view/product/1735220430478215017?share_region=BR: Blush
     https://shop.tiktok.com/br/pdp/batom-mac-hidratante/1736022415213954921: Batom
   max_cliques_ver_mais: 15
   espera_entre_cliques_seg: 2.0

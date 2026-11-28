@@ -218,8 +218,9 @@ def _abrir(page, url):
 def ofertas_do_produto(url, html):
     """Extrai variantes identificadas de uma página brasileira de produto."""
     destino = urlsplit(url)
-    produto = ID_RE.fullmatch(destino.path.removeprefix("/br"))
-    if destino.hostname != "shop.tiktok.com" or not destino.path.startswith("/br/") or not produto:
+    compartilhado = destino.hostname == "www.tiktok.com" and re.fullmatch(r"/view/product/[0-9]+/?", destino.path)
+    brasileiro = destino.hostname == "shop.tiktok.com" and re.fullmatch(r"/br/pdp/(?:[^/]+/)?[0-9]+/?", destino.path)
+    if not (compartilhado or brasileiro):
         return []
     ofertas = {}
     for bruto in _LDJSON.findall(html):
@@ -326,6 +327,12 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
             for url, cat in (conf.get("produtos_prioritarios") or {}).items():
                 try:
                     _abrir(page, url)
+                    seletor = page.get_by_text(re.compile(r"^Selecionar opções$", re.I))
+                    if seletor.count() and seletor.first.is_visible():
+                        seletor.first.click(timeout=5000)
+                        log.info("TikTok: abriu o seletor de opções")
+                    else:
+                        log.info("TikTok: seletor ausente; início da página: %s", page.locator("body").inner_text()[:200])
                     variantes = ofertas_do_produto(page.url, page.content())
                     for variante in variantes:
                         ofertas[variante.url] = (variante, cat)
