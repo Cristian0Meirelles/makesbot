@@ -17,6 +17,7 @@ import json
 import logging
 import re
 import time
+from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 from .catalogo import MARCAS, categoria_de, linha_catalogo
@@ -379,7 +380,11 @@ def coletar(cfg: dict, agora: dt.datetime | None = None, chrome: bool = False) -
         browser, ctx = _abrir_navegador(pw, chrome)
         page = ctx.pages[0] if chrome and ctx.pages else ctx.new_page()
         try:
-            for url, cat in (conf.get("produtos_prioritarios") or {}).items():
+            arquivo = Path(__file__).resolve().parents[1] / "docs" / "tiktok-produtos.json"
+            vinculados = json.loads(arquivo.read_text(encoding="utf-8"))
+            prioritarios = {p["url"]: p["categoria"] for p in vinculados.values()}
+            prioritarios.update(conf.get("produtos_prioritarios") or {})
+            for url, cat in prioritarios.items():
                 try:
                     if not chrome:
                         page.set_viewport_size({"width": 390, "height": 844})

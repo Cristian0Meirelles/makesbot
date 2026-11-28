@@ -268,6 +268,14 @@ function oficialDe(marca) {
 const SELO_OFICIAL = '<span class="selo-oficial">✓ Site oficial</span>';
 let tomFiltro = "";
 const corFalsa = c => !c || /^(\d+([.,]\d+)?\s*(un|und|unid|unidade|unidades|ml|g|gr|kg|oz)|unic[oa]|padr[aã]o|u|default|default title|sem cor)$/i.test(String(c).trim());
+let produtosTikTokPromise;
+function carregarProdutosTikTok() {
+  produtosTikTokPromise ||= fetch("tiktok-produtos.json").then(r => {
+    if (!r.ok) throw new Error();
+    return r.json();
+  }).catch(() => { produtosTikTokPromise = null; return {}; });
+  return produtosTikTokPromise;
+}
 let paletasPromise;
 function carregarPaletas() {
   paletasPromise ||= fetch("amostras-cor.json").then(r => {
@@ -357,9 +365,12 @@ async function abrirComparacao(g, cat, corEscolhida) {
   let disp = lista.filter(r => r.disponivel); const corNome = cores.get(corAtual)?.nome || "";
   let melhorLoja = disp.filter(r => r.preco).sort((a, b) => a.preco - b.preco)[0];
   const img = lista.find(r => r.imagem)?.imagem || cores.get(corAtual)?.img;
-  const pendentes = ["Mercado Livre", "TikTok Shop"].filter(loja => !porLoja.has(loja));
   const nomeProduto = g.nome || ref.produto;
-  const [, paletas] = await Promise.all([carregarOficiais(), carregarPaletas()]);
+  const [, paletas, produtosTikTok] = await Promise.all([carregarOficiais(), carregarPaletas(), carregarProdutosTikTok()]);
+  const tikTok = produtosTikTok[ref.grupo];
+  const linkTikTok = !porLoja.has("TikTok Shop") && tikTok?.categoria === cat && linkProduto(tikTok.url);
+  const pendentes = ["Mercado Livre", "TikTok Shop"].filter(loja =>
+    !porLoja.has(loja) && !(loja === "TikTok Shop" && linkTikTok));
   const paleta = paletas[ref.grupo];
   const rotuloTom = nome => [paleta?.numeros?.[norm(nome)], nome].filter(Boolean).map(esc).join(" · ");
   const oficial = oficialDe(ref.marca);
@@ -392,6 +403,10 @@ async function abrirComparacao(g, cat, corEscolhida) {
             <div class="preco">${r.preco ? brl(r.preco) : "—"}<small>${r.disponivel ? '<span style="color:var(--verde)">● disponível</span>' : "esgotado"}</small></div>
             ${linkProduto(r.url) ? `<a class="btn btn-linha btn-sm" href="${esc(r.loja === oficial?.loja ? r.url : urlSegura(r.url_afiliado || r.url))}" target="_blank" rel="noopener sponsored">${r.disponivel ? "Comprar" : "Ver produto"}</a>` : "<small>Link do item pendente</small>"}
           </div>`).join("") || `<div class="vazio">Sem lojas para esta cor ainda.</div>`}
+          ${linkTikTok ? `<div class="linha-loja">${logoLoja("TikTok Shop")}
+            <div><div class="ln">TikTok Shop</div><div>${esc(tikTok.produto)}</div>
+            <small>Preço e estoque desta cor aguardando confirmação.</small></div>
+            <div></div><a class="btn btn-linha btn-sm" href="${esc(tikTok.url)}" target="_blank" rel="noopener">Selecionar opções</a></div>` : ""}
           ${outras.size ? `<h3>Outras lojas deste produto</h3>${[...outras.values()].map(r => `<div class="linha-loja">
             ${logoLoja(r.loja)}<div><div class="ln">${esc(r.loja)}${r.loja === oficial?.loja ? SELO_OFICIAL : ""}</div>
             <div>${r.cor ? "Cor " + esc(r.cor) : "Cor não informada pela loja"}</div></div>
